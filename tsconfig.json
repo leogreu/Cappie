@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "outDir": "dist",
+        "target": "es2020",
+        "module": "es2022",
+        "moduleResolution": "bundler",
+        "lib": ["DOM", "ESNext", "WebWorker"],
+        "strict": true,
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "experimentalDecorators": true,
+        "isolatedModules": true,
+        "paths": {
+            "components/*": ["./src/components/*"],
+            "stores/*": ["./src/stores/*"],
+            "utils/*": ["./src/utils/*"]
+        },
+        "types": ["vite/client"]
+    }
+}
