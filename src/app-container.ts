@@ -5,30 +5,47 @@ import type { Base64File } from "utils/files.ts";
 import.meta.glob("./**/*.ts", { eager: true });
 
 const Options: {
-    [name: string]: {
+    [key: string]: {
+        name: string;
         min: number;
         max: number;
         step: number;
     };
 } = {
     blur: {
+        name: "Blur",
         min: 0,
         max: 10,
         step: 0.5
     },
     scale: {
+        name: "Scale",
         min: 0,
         max: 1,
         step: 0.01
     },
     radius: {
+        name: "Radius",
         min: 0,
         max: 50,
         step: 1
     },
     shadow: {
+        name: "Shadow",
         min: 0,
         max: 25,
+        step: 1
+    },
+    rotate_x: {
+        name: "Rotate (x-axis)",
+        min: 0,
+        max: 360,
+        step: 1
+    },
+    rotate_y: {
+        name: "Rotate (y-axis)",
+        min: 0,
+        max: 360,
         step: 1
     }
 };
@@ -78,6 +95,7 @@ export class AppContainer extends AppComponent {
 
             scale: var(--scale);
             border-radius: calc(var(--radius) * 1px);
+            transform: perspective(75rem) rotateX(calc(var(--rotate_x) * -1deg)) rotateY(calc(var(--rotate_y) * 1deg));
         }
 
         file-dropzone {
@@ -124,7 +142,7 @@ export class AppContainer extends AppComponent {
                                 value=${Number(this.getProperty(key))}
                                 @input=${this.handleNumericInput}
                             >
-                                ${key[0].toUpperCase() + key.slice(1)}
+                                ${value.name}
                             </app-slider>
                         `)}
                     </app-group>
