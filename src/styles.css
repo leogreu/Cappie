@@ -128,6 +128,7 @@
     --disabled-opacity: .5;
 
     /* default image values */
+    --blur: 0;
     --scale: 0.75;
     --radius: 10;
 
