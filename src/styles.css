@@ -127,6 +127,10 @@
     --active-brightness: .8;
     --disabled-opacity: .5;
 
+    /* default image values */
+    --scale: 0.75;
+    --radius: 10;
+
     /* light scheme */
     color-scheme: light;
     --primary: rgb(var(--blue-6));

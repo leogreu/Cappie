@@ -21,15 +21,18 @@ export class AppContainer extends AppComponent {
             place-items: center;
             flex: 2;
             margin: var(--size-12);
-            padding: var(--size-12);
             background-color: var(--surface-2);
-            border-radius: var(--radius-lg);
+            border-radius: var(--radius-sm);
         }
 
-        canvas {
-            width: 100%;
-            height: 100%;
-            background-color: var(--surface-2);
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            overflow: hidden;
+
+            scale: var(--scale);
+            border-radius: calc(var(--radius) * 1px);
         }
 
         aside {
@@ -55,13 +58,45 @@ export class AppContainer extends AppComponent {
                 }
             </main>
             <aside>
-                <input type="range" />
+                Scale
+                <input
+                    name="scale"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value=${this.getProperty("scale")}
+                    @input=${this.handleNumericInput}
+                >
+                Radius
+                <input
+                    name="radius"
+                    type="range"
+                    min="0"
+                    max="40"
+                    step="1"
+                    value=${this.getProperty("radius")}
+                    @input=${this.handleNumericInput}
+                >
             </aside>
         `;
     }
 
     private handleFileInput({ detail }: CustomEvent<Base64File>) {
         this.file = detail;
+    }
+
+    private handleNumericInput({ target }: InputEvent) {
+        const { name, value } = target as HTMLInputElement;
+        this.setProperty(name, value);
+    }
+
+    getProperty(name: string) {
+        return getComputedStyle(document.documentElement).getPropertyValue(`--${name}`);
+    }
+
+    setProperty(name: string, value: string) {
+        document.documentElement.style.setProperty(`--${name}`, value);
     }
 }
 
