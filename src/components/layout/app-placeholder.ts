@@ -19,11 +19,11 @@ export class AppPlaceholder extends AppComponent {
             justify-content: center;
             align-items: center;
             padding: var(--size-4) var(--size-8);
+            background-color: var(--surface-1);
             text-align: center;
         }
 
         :host([bordered]) {
-            border: 1px dashed var(--contour);
             border-radius: var(--radius-lg);
         }
 

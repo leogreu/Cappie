@@ -131,6 +131,7 @@
     --blur: 0;
     --scale: 0.75;
     --radius: 10;
+    --shadow: 10;
 
     /* light scheme */
     color-scheme: light;
@@ -150,7 +151,6 @@
     --text-3: rgb(var(--gray-4));
     --contour: rgb(var(--gray-3));
     --translucent: rgba(255, 255, 255, .5);
-    --shadow: rgba(var(--gray-9), .15);
     --dust: rgb(var(--gray-0));
 }
 
@@ -174,7 +174,6 @@
         --text-3: rgb(var(--gray-4));
         --contour: rgb(var(--gray-6));
         --translucent: rgba(var(--gray-9), .5);
-        --shadow: transparent;
         --dust: rgb(var(--gray-8));
     }
 }

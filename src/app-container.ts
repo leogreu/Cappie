@@ -25,6 +25,11 @@ const Options: {
         min: 0,
         max: 50,
         step: 1
+    },
+    shadow: {
+        min: 0,
+        max: 25,
+        step: 1
     }
 };
 
@@ -67,7 +72,7 @@ export class AppContainer extends AppComponent {
             max-height: 100%;
             object-fit: contain;
             overflow: hidden;
-            box-shadow: var(--shadow-lg) var(--shadow);
+            box-shadow: 0 calc(var(--shadow) * 1px) calc(var(--shadow) * 2px) calc(var(--shadow) * -1px) black;
 
             scale: var(--scale);
             border-radius: calc(var(--radius) * 1px);
@@ -96,7 +101,7 @@ export class AppContainer extends AppComponent {
                     `
                     : html`
                         <file-dropzone type="base64Binary" @file-input=${this.handleFileInput}>
-                            Upload image
+                            Drag-and-drop image or click to select
                         </file-dropzone>
                     `
                 }
