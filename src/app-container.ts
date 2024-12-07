@@ -40,9 +40,12 @@ export class AppContainer extends AppComponent {
 
     static styles = css`
         :host {
+            box-sizing: border-box;
             display: flex;
             flex: 1;
             height: 100%;
+            padding: var(--size-8);
+            gap: var(--size-8);
         }
 
         main {
@@ -50,8 +53,7 @@ export class AppContainer extends AppComponent {
             display: grid;
             place-items: center;
             flex: 2;
-            margin: var(--size-12);
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-lg);
             overflow: hidden;
         }
 
@@ -59,7 +61,7 @@ export class AppContainer extends AppComponent {
             position: absolute;
             height: 100%;
             width: 100%;
-            background-image: url("public/background-1.jpg");
+            background-image: url("background-1.jpg");
             background-size: cover;
             scale: 1.05;
 
@@ -83,11 +85,11 @@ export class AppContainer extends AppComponent {
         }
 
         aside {
-            display: flex;
-            flex-direction: column;
             flex: 1;
-            justify-content: center;
-            align-items: center;
+        }
+
+        app-card {
+            height: 100%;
         }
     `;
 
@@ -107,18 +109,26 @@ export class AppContainer extends AppComponent {
                 }
             </main>
             <aside>
-                ${Object.entries(Options).map(([key, value]) => html`
-                    ${key}
-                    <input
-                        name=${key}
-                        type="range"
-                        min=${value.min}
-                        max=${value.max}
-                        step=${value.step}
-                        value=${this.getProperty(key)}
-                        @input=${this.handleNumericInput}
-                    >
-                `)}
+                <app-card>
+                    <app-text slot="title">
+                        Options
+                    </app-text>
+                    <app-group direction="column" gap="huge">
+                        ${Object.entries(Options).map(([key, value]) => html`
+                            <app-slider
+                                name=${key}
+                                type="range"
+                                min=${value.min}
+                                max=${value.max}
+                                step=${value.step}
+                                value=${Number(this.getProperty(key))}
+                                @input=${this.handleNumericInput}
+                            >
+                                ${key[0].toUpperCase() + key.slice(1)}
+                            </app-slider>
+                        `)}
+                    </app-group>
+                </app-card>
             </aside>
         `;
     }
