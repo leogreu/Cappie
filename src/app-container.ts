@@ -2,7 +2,7 @@ import { AppComponent, customElement, state, css, html } from "./components/base
 import type { Base64File } from "utils/files.ts";
 
 // Import all components to be used without import
-import.meta.glob("./**/*.ts", { eager: true });
+import.meta.glob("./components/**/*.ts", { eager: true });
 
 const Options: {
     [key: string]: {
@@ -171,6 +171,6 @@ export class AppContainer extends AppComponent {
 
 declare global {
     interface HTMLElementTagNameMap {
-        "app-container": AppContainer
+        "app-container": AppContainer;
     }
 }
