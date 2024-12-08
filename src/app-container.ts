@@ -304,19 +304,18 @@ export class AppContainer extends AppComponent {
             ctx.translate(centerX, centerY);
             ctx.rotate(rotationRad);
 
-            // Apply shadow (approximate the effect of box-shadow)
-            // We'll assume a downward shadow (like the original code with a vertical offset)
-            ctx.shadowColor = 'black';
+            // Always apply border radius by clipping (even if radius=0)
+            this.roundRect(ctx, -fgWidth/2, -fgHeight/2, fgWidth, fgHeight, this.transforms.radius);
+
+            // Apply shadow first using the same path
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
             ctx.shadowBlur = this.transforms.shadow * 2;
             ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = this.transforms.shadow;
+            ctx.fillStyle = 'white';
+            ctx.fill();
 
-            // Apply border radius by clipping
-            if (this.transforms.radius > 0) {
-                this.roundRect(ctx, -fgWidth/2, -fgHeight/2, fgWidth, fgHeight, this.transforms.radius);
-                ctx.clip();
-            }
-
+            ctx.clip();
             ctx.drawImage(img, -fgWidth/2, -fgHeight/2, fgWidth, fgHeight);
 
             ctx.restore();
