@@ -1,4 +1,5 @@
 import { AppComponent, customElement, state, css, html } from "./components/base/app-component.ts";
+import { debounce } from "utils/debounce.ts";
 import type { Base64File } from "utils/files.ts";
 
 // Import all components to be used without import
@@ -220,6 +221,10 @@ export class AppContainer extends AppComponent {
         if (this.file) this.drawCanvas();
     }
 
+    firstUpdated() {
+        window.onresize = debounce(() => this.drawCanvas(), 50);
+    }
+
     private async drawCanvas() {
         const canvas = this.get("canvas");
         const ctx = canvas.getContext("2d")!;
@@ -252,7 +257,7 @@ export class AppContainer extends AppComponent {
         if (this.backgroundImage) {
             ctx.save();
             ctx.filter = `blur(${this.transforms.blur}px)`;
-            ctx.drawImage(this.backgroundImage, 0, 0, width, height);
+            ctx.drawImage(this.backgroundImage, width * -0.025, height * -0.025, width * 1.05, height * 1.05);
             ctx.restore();
         }
 
