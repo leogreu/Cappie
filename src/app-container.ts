@@ -82,7 +82,7 @@ export class AppContainer extends AppComponent {
     @state()
     transforms: Record<string, number> = {
         blur: 0,
-        scale: 0.5,
+        scale: 0.75,
         radius: 10,
         shadow: 10,
         rotateX: 0,
@@ -281,10 +281,13 @@ export class AppContainer extends AppComponent {
             // We'll translate to center, apply rotation, then translate back.
             const img = this.foregroundImage;
             const imgRatio = img.width / img.height;
-            let fgWidth = width * 0.8; // foreground max width (arbitrary scale)
+            let fgWidth = width;
             let fgHeight = fgWidth / imgRatio;
-            
-            // Adjust for scale
+            if (fgHeight > height) {
+                fgHeight = height;
+                fgWidth = fgHeight * imgRatio;
+            }
+            // Adjust for user scale
             fgWidth *= this.transforms.scale;
             fgHeight *= this.transforms.scale;
 
