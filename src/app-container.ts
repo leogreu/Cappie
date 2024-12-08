@@ -36,13 +36,13 @@ const TransformOptions: {
         max: 25,
         step: 1
     },
-    rotate_x: {
+    rotateX: {
         name: "Rotate (x-axis)",
         min: 0,
         max: 360,
         step: 1
     },
-    rotate_y: {
+    rotateY: {
         name: "Rotate (y-axis)",
         min: 0,
         max: 360,
@@ -79,7 +79,21 @@ export class AppContainer extends AppComponent {
     ratio = AspectRatios[0];
 
     @state()
+    transforms: Record<string, number> = {
+        blur: 0,
+        scale: 0.5,
+        radius: 10,
+        shadow: 10,
+        rotateX: 0,
+        rotateY: 0
+    };
+
+    @state()
     file?: Base64File;
+
+    // We'll store loaded images to avoid reloading them each time.
+    private backgroundImage?: HTMLImageElement;
+    private foregroundImage?: HTMLImageElement;
 
     static styles = css`
         :host {
@@ -97,37 +111,18 @@ export class AppContainer extends AppComponent {
         figure {
             display: grid;
             place-items: center;
-            max-width: 100%;
-            max-height: 100%;
+            width: 100%;
+            height: 100%;
             margin: 0;
             border-radius: var(--radius-lg);
             overflow: hidden;
         }
 
-        img {
-            grid-row: 1;
-            grid-column: 1;
-        }
-
-        img.background {
-            height: 100%;
-            width: 100%;
-            object-fit: cover;
-            scale: 1.05;
-
-            filter: blur(calc(var(--blur) * 1px));
-        }
-
-        img.foreground {
+        /* The canvas will be drawn inside figure */
+        canvas {
+            display: block;
             max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            overflow: hidden;
-            box-shadow: 0 calc(var(--shadow) * 1px) calc(var(--shadow) * 2px) calc(var(--shadow) * -1px) black;
-
-            scale: var(--scale);
-            border-radius: calc(var(--radius) * 1px);
-            transform: perspective(75rem) rotateX(calc(var(--rotate_x) * -1deg)) rotateY(calc(var(--rotate_y) * 1deg));
+            height: auto;
         }
 
         file-dropzone {
@@ -154,9 +149,8 @@ export class AppContainer extends AppComponent {
             <main>
                 ${this.file
                     ? html`
-                        <figure style="aspect-ratio: ${this.ratio || 'unset'};">
-                            <img class="background" src=${BackgroundImages[this.background].previewPath}>
-                            <img class="foreground" src="data:${this.file.mimeType};base64,${this.file.data}">
+                        <figure>
+                            <canvas></canvas>
                         </figure>
                     `
                     : html`
@@ -209,7 +203,7 @@ export class AppContainer extends AppComponent {
                                 min=${value.min}
                                 max=${value.max}
                                 step=${value.step}
-                                value=${Number(this.getProperty(key))}
+                                value=${this.transforms[key]}
                                 @input=${this.handleNumericInput}
                             >
                                 ${value.name}
@@ -221,13 +215,114 @@ export class AppContainer extends AppComponent {
         `;
     }
 
+    updated() {
+        // Whenever the component updates, re-draw if we have images
+        if (this.file) this.drawCanvas();
+    }
+
+    private async drawCanvas() {
+        const canvas = this.get("canvas");
+        const ctx = canvas.getContext("2d")!;
+
+        // Determine aspect ratio for canvas sizing
+        // We will take the width as the container's width and height according to ratio.
+        let width = canvas.parentElement?.clientWidth || 800;
+        let height = canvas.parentElement?.clientHeight || 600;
+
+        // If ratio is set, compute height from width
+        if (this.ratio) {
+            const [w, h] = this.ratio.split('/').map(r => parseFloat(r.trim()));
+            if (!isNaN(w) && !isNaN(h)) {
+                const aspectRatio = w / h;
+                height = width / aspectRatio;
+            }
+        }
+
+        // Handle device pixel ratio
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+
+        ctx.resetTransform();
+        ctx.scale(dpr, dpr);
+
+        // Draw background image with blur
+        if (this.backgroundImage) {
+            ctx.save();
+            ctx.filter = `blur(${this.transforms.blur}px)`;
+            ctx.drawImage(this.backgroundImage, 0, 0, width, height);
+            ctx.restore();
+        }
+
+        // Draw foreground with transformations
+        if (this.foregroundImage) {
+            // We'll translate to center, apply rotation, then translate back.
+            const img = this.foregroundImage;
+            const imgRatio = img.width / img.height;
+            let fgWidth = width * 0.8; // foreground max width (arbitrary scale)
+            let fgHeight = fgWidth / imgRatio;
+            
+            // Adjust for scale
+            fgWidth *= this.transforms.scale;
+            fgHeight *= this.transforms.scale;
+
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            ctx.save();
+
+            // Simulate a simple rotation. True 3D transforms are not directly possible in 2D canvas.
+            // We'll just rotate by an average of rotateX and rotateY for demonstration.
+            const rotationDeg = (this.transforms.rotateY - this.transforms.rotateX);
+            const rotationRad = rotationDeg * Math.PI / 180;
+
+            ctx.translate(centerX, centerY);
+            ctx.rotate(rotationRad);
+
+            // Apply shadow (approximate the effect of box-shadow)
+            // We'll assume a downward shadow (like the original code with a vertical offset)
+            ctx.shadowColor = 'black';
+            ctx.shadowBlur = this.transforms.shadow * 2;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = this.transforms.shadow;
+
+            // Apply border radius by clipping
+            if (this.transforms.radius > 0) {
+                this.roundRect(ctx, -fgWidth/2, -fgHeight/2, fgWidth, fgHeight, this.transforms.radius);
+                ctx.clip();
+            }
+
+            ctx.drawImage(img, -fgWidth/2, -fgHeight/2, fgWidth, fgHeight);
+
+            ctx.restore();
+        }
+    }
+
+    private roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+    }
+
     private handleFileInput({ detail }: CustomEvent<Base64File>) {
         this.file = detail;
+        this.loadForegroundImage();
     }
 
     private handleBackgroundClick({ target }: MouseEvent) {
         const { id } = target as HTMLElement;
         this.background = Number(id);
+        this.loadBackgroundImage();
     }
 
     private handleRatioClick({ target }: MouseEvent) {
@@ -237,15 +332,31 @@ export class AppContainer extends AppComponent {
 
     private handleNumericInput({ target }: InputEvent) {
         const { name, value } = target as HTMLInputElement;
-        this.setProperty(name, value);
+        this.transforms = {
+            ...this.transforms,
+            [name]: Number(value)
+        };
+        this.drawCanvas();
     }
 
-    getProperty(name: string) {
-        return getComputedStyle(document.documentElement).getPropertyValue(`--${name}`);
+    private loadBackgroundImage() {
+        const bg = new Image();
+        bg.src = BackgroundImages[this.background].previewPath;
+        bg.onload = () => {
+            this.backgroundImage = bg;
+            this.requestUpdate(); // re-draw once loaded
+        };
     }
 
-    setProperty(name: string, value: string) {
-        document.documentElement.style.setProperty(`--${name}`, value);
+    private loadForegroundImage() {
+        if (!this.file) return;
+        const fg = new Image();
+        fg.src = `data:${this.file.mimeType};base64,${this.file.data}`;
+        fg.onload = () => {
+            this.foregroundImage = fg;
+            this.loadBackgroundImage(); // ensure background is loaded as well
+            this.requestUpdate();
+        };
     }
 }
 
