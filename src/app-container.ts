@@ -50,8 +50,29 @@ const Options: {
     }
 };
 
+const BackgroundImages: {
+    path: string;
+    previewPath: string;
+}[] = [
+    {
+        path: "/background-1.jpg",
+        previewPath: "/background-1.jpg"
+    },
+    {
+        path: "/background-2.jpg",
+        previewPath: "/background-2.jpg"
+    },
+    {
+        path: "/background-3.jpg",
+        previewPath: "/background-3.jpg"
+    }
+];
+
 @customElement("app-container")
 export class AppContainer extends AppComponent {
+    @state()
+    background = 0;
+
     @state()
     file?: Base64File;
 
@@ -109,6 +130,10 @@ export class AppContainer extends AppComponent {
         app-card {
             height: 100%;
         }
+
+        [direction=grid] {
+            --min-width: 5rem;
+        }
     `;
 
     render() {
@@ -131,7 +156,21 @@ export class AppContainer extends AppComponent {
                     <app-text slot="title">
                         Options
                     </app-text>
-                    <app-group direction="column" gap="huge">
+                    <app-group direction="column" gap="large">
+                        <app-group direction="column">
+                            <app-paragraph bold>
+                                Background
+                            </app-paragraph>
+                            <app-group direction="grid" @click=${this.handleBackgroundClick}>
+                                ${BackgroundImages.map((image, index) => html`
+                                    <image-button
+                                        id=${index}
+                                        src=${image.previewPath}
+                                        ?checked=${index === this.background}
+                                    ></image-button>
+                                `)}
+                            </app-group>
+                        </app-group>
                         ${Object.entries(Options).map(([key, value]) => html`
                             <app-slider
                                 name=${key}
@@ -153,6 +192,14 @@ export class AppContainer extends AppComponent {
 
     private handleFileInput({ detail }: CustomEvent<Base64File>) {
         this.file = detail;
+    }
+
+    private handleBackgroundClick({ target }: MouseEvent) {
+        const { id } = target as HTMLElement;
+        this.background = Number(id);
+
+        // TODO: Probably use img element
+        this.get("div").style.backgroundImage = `url(${BackgroundImages[this.background].previewPath})`;
     }
 
     private handleNumericInput({ target }: InputEvent) {
