@@ -255,9 +255,24 @@ export class AppContainer extends AppComponent {
 
         // Draw background image with blur
         if (this.backgroundImage) {
+            const imageRatio = this.backgroundImage.width / this.backgroundImage.height;
+            const targetRatio = width / height;
+
+            let drawWidth, drawHeight;
+            if (imageRatio > targetRatio) {
+                drawHeight = height * 1.05;
+                drawWidth = drawHeight * imageRatio;
+            } else {
+                drawWidth = width * 1.05;
+                drawHeight = drawWidth / imageRatio;
+            }
+
+            const dx = (width - drawWidth) / 2;
+            const dy = (height - drawHeight) / 2;
+
             ctx.save();
             ctx.filter = `blur(${this.transforms.blur}px)`;
-            ctx.drawImage(this.backgroundImage, width * -0.025, height * -0.025, width * 1.05, height * 1.05);
+            ctx.drawImage(this.backgroundImage, dx, dy, drawWidth, drawHeight);
             ctx.restore();
         }
 
