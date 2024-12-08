@@ -83,10 +83,7 @@ export class AppContainer extends AppComponent {
 
     static styles = css`
         :host {
-            box-sizing: border-box;
             display: flex;
-            flex: 1;
-            height: 100%;
             padding: var(--size-8);
             gap: var(--size-8);
         }
