@@ -32,6 +32,9 @@ export class AppButton extends AppComponent {
     @property({ type: Boolean, reflect: true })
     disabled = false;
 
+    @property({ type: Boolean, reflect: true })
+    checked = false;
+
     static styles = css`
         :host {
             display: inline-flex;
@@ -57,7 +60,7 @@ export class AppButton extends AppComponent {
             cursor: pointer;
         }
 
-        button:focus-visible {
+        :host([checked]) button, button:focus-visible {
             outline: none;
             box-shadow: var(--ring-md) var(--surface-1), var(--ring-lg) var(--primary);
         }

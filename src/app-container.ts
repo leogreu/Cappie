@@ -4,7 +4,7 @@ import type { Base64File } from "utils/files.ts";
 // Import all components to be used without import
 import.meta.glob("./components/**/*.ts", { eager: true });
 
-const Options: {
+const TransformOptions: {
     [key: string]: {
         name: string;
         min: number;
@@ -50,6 +50,8 @@ const Options: {
     }
 };
 
+const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
+
 const BackgroundImages: {
     path: string;
     previewPath: string;
@@ -74,6 +76,9 @@ export class AppContainer extends AppComponent {
     background = 0;
 
     @state()
+    ratio = AspectRatios[0];
+
+    @state()
     file?: Base64File;
 
     static styles = css`
@@ -87,16 +92,27 @@ export class AppContainer extends AppComponent {
         }
 
         main {
-            position: relative;
             display: grid;
             place-items: center;
             flex: 2;
+        }
+
+        figure {
+            display: grid;
+            place-items: center;
+            max-width: 100%;
+            max-height: 100%;
+            margin: 0;
             border-radius: var(--radius-lg);
             overflow: hidden;
         }
 
+        img {
+            grid-row: 1;
+            grid-column: 1;
+        }
+
         img.background {
-            position: absolute;
             height: 100%;
             width: 100%;
             object-fit: cover;
@@ -106,7 +122,6 @@ export class AppContainer extends AppComponent {
         }
 
         img.foreground {
-            position: absolute;
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
@@ -140,16 +155,19 @@ export class AppContainer extends AppComponent {
     render() {
         return html`
             <main>
-                ${this.file
-                    ? html`
+                ${this.file && html`
+                    <figure style="aspect-ratio: ${this.ratio || 'unset'};">
                         <img class="background" src=${BackgroundImages[this.background].previewPath}>
                         <img class="foreground" src="data:${this.file.mimeType};base64,${this.file.data}">
-                    `
-                    : html`
+                    </figure>
+                `}
+                ${!this.file
+                    ? html`
                         <file-dropzone type="base64Binary" @file-input=${this.handleFileInput}>
                             Drag-and-drop image or click to select
                         </file-dropzone>
                     `
+                    : undefined
                 }
             </main>
             <aside>
@@ -172,7 +190,23 @@ export class AppContainer extends AppComponent {
                                 `)}
                             </app-group>
                         </app-group>
-                        ${Object.entries(Options).map(([key, value]) => html`
+                        <app-group direction="column">
+                            <app-paragraph bold>
+                                Ratio
+                            </app-paragraph>
+                            <app-group @click=${this.handleRatioClick}>
+                                ${AspectRatios.map(ratio => html`
+                                    <app-button
+                                        id=${ratio}
+                                        ?checked=${ratio === this.ratio}
+                                        fullwidth
+                                    >
+                                        ${ratio ? ratio.replace(" / ", ":") : "Responsive"}
+                                    </app-button>
+                                `)}
+                            </app-group>
+                        </app-group>
+                        ${Object.entries(TransformOptions).map(([key, value]) => html`
                             <app-slider
                                 name=${key}
                                 type="range"
@@ -198,6 +232,11 @@ export class AppContainer extends AppComponent {
     private handleBackgroundClick({ target }: MouseEvent) {
         const { id } = target as HTMLElement;
         this.background = Number(id);
+    }
+
+    private handleRatioClick({ target }: MouseEvent) {
+        const { id } = target as HTMLElement;
+        this.ratio = id;
     }
 
     private handleNumericInput({ target }: InputEvent) {
