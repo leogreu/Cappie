@@ -95,18 +95,17 @@ export class AppContainer extends AppComponent {
             overflow: hidden;
         }
 
-        div {
+        img.background {
             position: absolute;
             height: 100%;
             width: 100%;
-            background-image: url("background-1.jpg");
-            background-size: cover;
+            object-fit: cover;
             scale: 1.05;
 
             filter: blur(calc(var(--blur) * 1px));
         }
 
-        img {
+        img.foreground {
             position: absolute;
             max-width: 100%;
             max-height: 100%;
@@ -120,7 +119,9 @@ export class AppContainer extends AppComponent {
         }
 
         file-dropzone {
-            position: absolute;
+            display: flex;
+            height: 100%;
+            width: 100%;
         }
 
         aside {
@@ -139,10 +140,10 @@ export class AppContainer extends AppComponent {
     render() {
         return html`
             <main>
-                <div></div>
                 ${this.file
                     ? html`
-                        <img src="data:${this.file.mimeType};base64,${this.file.data}">
+                        <img class="background" src=${BackgroundImages[this.background].previewPath}>
+                        <img class="foreground" src="data:${this.file.mimeType};base64,${this.file.data}">
                     `
                     : html`
                         <file-dropzone type="base64Binary" @file-input=${this.handleFileInput}>
@@ -197,9 +198,6 @@ export class AppContainer extends AppComponent {
     private handleBackgroundClick({ target }: MouseEvent) {
         const { id } = target as HTMLElement;
         this.background = Number(id);
-
-        // TODO: Probably use img element
-        this.get("div").style.backgroundImage = `url(${BackgroundImages[this.background].previewPath})`;
     }
 
     private handleNumericInput({ target }: InputEvent) {

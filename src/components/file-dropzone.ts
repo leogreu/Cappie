@@ -26,7 +26,7 @@ export class FileDropzone extends AppComponent {
                 @dragover=${this.handleDragover}
                 @dragleave=${this.handleDragleave}
             >
-                <app-icon slot="icon" name="upload-thin"></app-icon>
+                <app-icon slot="icon" name="image-duotone"></app-icon>
                 <slot></slot>
             </app-placeholder>
         `;
