@@ -152,19 +152,18 @@ export class AppContainer extends AppComponent {
     render() {
         return html`
             <main>
-                ${this.file && html`
-                    <figure style="aspect-ratio: ${this.ratio || 'unset'};">
-                        <img class="background" src=${BackgroundImages[this.background].previewPath}>
-                        <img class="foreground" src="data:${this.file.mimeType};base64,${this.file.data}">
-                    </figure>
-                `}
-                ${!this.file
+                ${this.file
                     ? html`
+                        <figure style="aspect-ratio: ${this.ratio || 'unset'};">
+                            <img class="background" src=${BackgroundImages[this.background].previewPath}>
+                            <img class="foreground" src="data:${this.file.mimeType};base64,${this.file.data}">
+                        </figure>
+                    `
+                    : html`
                         <file-dropzone type="base64Binary" @file-input=${this.handleFileInput}>
                             Drag-and-drop image or click to select
                         </file-dropzone>
                     `
-                    : undefined
                 }
             </main>
             <aside>
