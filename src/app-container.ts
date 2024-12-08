@@ -36,18 +36,6 @@ const TransformOptions: {
         min: 0,
         max: 25,
         step: 1
-    },
-    rotateX: {
-        name: "Rotate (x-axis)",
-        min: 0,
-        max: 360,
-        step: 1
-    },
-    rotateY: {
-        name: "Rotate (y-axis)",
-        min: 0,
-        max: 360,
-        step: 1
     }
 };
 
@@ -84,9 +72,7 @@ export class AppContainer extends AppComponent {
         blur: 0,
         scale: 0.75,
         radius: 10,
-        shadow: 10,
-        rotateX: 0,
-        rotateY: 0
+        shadow: 10
     };
 
     @state()
@@ -106,7 +92,10 @@ export class AppContainer extends AppComponent {
         main {
             display: grid;
             place-items: center;
-            flex: 2;
+            flex: 2.5;
+            background-color: var(--surface-2);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
         }
 
         figure {
@@ -115,7 +104,6 @@ export class AppContainer extends AppComponent {
             width: 100%;
             height: 100%;
             margin: 0;
-            border-radius: var(--radius-lg);
             overflow: hidden;
         }
 
@@ -166,7 +154,7 @@ export class AppContainer extends AppComponent {
                     <app-text slot="title">
                         Options
                     </app-text>
-                    <app-group direction="column" gap="large">
+                    <app-group direction="column" gap="huge">
                         <app-group direction="column">
                             <app-paragraph bold>
                                 Background
@@ -291,18 +279,11 @@ export class AppContainer extends AppComponent {
             fgWidth *= this.transforms.scale;
             fgHeight *= this.transforms.scale;
 
-            const centerX = width / 2;
-            const centerY = height / 2;
-
             ctx.save();
 
-            // Simulate a simple rotation. True 3D transforms are not directly possible in 2D canvas.
-            // We'll just rotate by an average of rotateX and rotateY for demonstration.
-            const rotationDeg = (this.transforms.rotateY - this.transforms.rotateX);
-            const rotationRad = rotationDeg * Math.PI / 180;
-
+            const centerX = width / 2;
+            const centerY = height / 2;
             ctx.translate(centerX, centerY);
-            ctx.rotate(rotationRad);
 
             // Always apply border radius by clipping (even if radius=0)
             this.roundRect(ctx, -fgWidth/2, -fgHeight/2, fgWidth, fgHeight, this.transforms.radius);
