@@ -126,12 +126,8 @@ export class AppContainer extends AppComponent {
             flex: 1;
         }
 
-        app-card, app-card > app-group {
+        app-card {
             height: 100%;
-        }
-
-        footer {
-            margin-top: auto;
         }
 
         [direction=grid] {
@@ -153,14 +149,13 @@ export class AppContainer extends AppComponent {
             </main>
             <aside>
                 <app-card>
-                    <app-text slot="title">
+                    <app-title size="tiny" slot="title">
                         Options
-                    </app-text>
+                    </app-title>
                     <icon-button
                         slot="action"
                         name="arrow-rotate-left-regular"
-                        size="small"
-                        @click=${this.handleDefaultsClick}
+                        @click=${this.handleResetClick}
                     ></icon-button>
                     <app-group direction="column" gap="huge">
                         <app-group direction="column">
@@ -196,6 +191,7 @@ export class AppContainer extends AppComponent {
                                 ${AspectRatios.map(ratio => html`
                                     <app-button
                                         id=${ratio}
+                                        size="small"
                                         ?checked=${ratio === this.ratio}
                                         fullwidth
                                     >
@@ -217,16 +213,16 @@ export class AppContainer extends AppComponent {
                                 ${value.name}
                             </app-slider>
                         `)}
-                        <footer>
-                            <app-group>
-                                <app-button size="small" fullwidth @click=${this.handleDownloadClick}>
-                                    <app-text>Download</app-text>
-                                </app-button>
-                                <app-button size="small" fullwidth light @click=${this.handleResetClick}>
-                                    <app-text>Reset</app-text>
-                                </app-button>
-                            </app-group>
-                        </footer>
+                    </app-group>
+                    <app-group slot="footer">
+                        <app-button size="small" fullwidth @click=${this.handleDownloadClick}>
+                            <app-icon name="arrow-down-to-line-regular"></app-icon>
+                            <app-text>Download</app-text>
+                        </app-button>
+                        <app-button size="small" fullwidth light @click=${this.handleRemoveClick}>
+                            <app-icon name="trash-regular"></app-icon>
+                            <app-text>Remove</app-text>
+                        </app-button>
                     </app-group>
                 </app-card>
             </aside>
@@ -340,7 +336,7 @@ export class AppContainer extends AppComponent {
         this.file = detail;
     }
 
-    private handleDefaultsClick() {
+    private handleResetClick() {
         this.transforms = { ...TransformDefaults };
     }
 
@@ -388,7 +384,7 @@ export class AppContainer extends AppComponent {
         downloadObjectURL(url, "Cappie-Export");
     }
 
-    private handleResetClick() {
+    private handleRemoveClick() {
         this.file = undefined;
     }
 

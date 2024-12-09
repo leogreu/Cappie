@@ -38,6 +38,11 @@ export class AppCard extends AppComponent {
             height: 100%;
         }
 
+        footer {
+            padding: var(--size-4);
+            border-top: 1px solid var(--surface-3);
+        }
+
         :host(:not([paddingless])) article {
             padding: var(--size-4);
         }
@@ -60,6 +65,9 @@ export class AppCard extends AppComponent {
             <article>
                 <slot></slot>
             </article>
+            <footer>
+                <slot name="footer"></slot>
+            </footer>
         `;
     }
 
