@@ -1,4 +1,5 @@
 import { AppComponent, customElement, state, css, html } from "./components/base/app-component.ts";
+import { debounce } from "utils/debounce.ts";
 import type { Base64File } from "utils/files.ts";
 
 // Import all components to be used without import
@@ -35,18 +36,6 @@ const TransformOptions: {
         min: 0,
         max: 25,
         step: 1
-    },
-    rotate_x: {
-        name: "Rotate (x-axis)",
-        min: 0,
-        max: 360,
-        step: 1
-    },
-    rotate_y: {
-        name: "Rotate (y-axis)",
-        min: 0,
-        max: 360,
-        step: 1
     }
 };
 
@@ -79,7 +68,21 @@ export class AppContainer extends AppComponent {
     ratio = AspectRatios[0];
 
     @state()
+    transforms: Record<string, number> = {
+        blur: 0,
+        scale: 0.75,
+        radius: 10,
+        shadow: 10
+    };
+
+    @state()
     file?: Base64File;
+
+    @state()
+    backgroundImage?: HTMLImageElement;
+
+    @state()
+    foregroundImage?: HTMLImageElement;
 
     static styles = css`
         :host {
@@ -91,43 +94,15 @@ export class AppContainer extends AppComponent {
         main {
             display: grid;
             place-items: center;
-            flex: 2;
-        }
-
-        figure {
-            display: grid;
-            place-items: center;
-            max-width: 100%;
-            max-height: 100%;
-            margin: 0;
+            flex: 2.5;
+            background-color: var(--surface-2);
             border-radius: var(--radius-lg);
             overflow: hidden;
         }
 
-        img {
-            grid-row: 1;
-            grid-column: 1;
-        }
-
-        img.background {
-            height: 100%;
-            width: 100%;
-            object-fit: cover;
-            scale: 1.05;
-
-            filter: blur(calc(var(--blur) * 1px));
-        }
-
-        img.foreground {
+        canvas {
             max-width: 100%;
             max-height: 100%;
-            object-fit: contain;
-            overflow: hidden;
-            box-shadow: 0 calc(var(--shadow) * 1px) calc(var(--shadow) * 2px) calc(var(--shadow) * -1px) black;
-
-            scale: var(--scale);
-            border-radius: calc(var(--radius) * 1px);
-            transform: perspective(75rem) rotateX(calc(var(--rotate_x) * -1deg)) rotateY(calc(var(--rotate_y) * 1deg));
         }
 
         file-dropzone {
@@ -153,12 +128,7 @@ export class AppContainer extends AppComponent {
         return html`
             <main>
                 ${this.file
-                    ? html`
-                        <figure style="aspect-ratio: ${this.ratio || 'unset'};">
-                            <img class="background" src=${BackgroundImages[this.background].previewPath}>
-                            <img class="foreground" src="data:${this.file.mimeType};base64,${this.file.data}">
-                        </figure>
-                    `
+                    ? html`<canvas></canvas>`
                     : html`
                         <file-dropzone type="base64Binary" @file-input=${this.handleFileInput}>
                             Drag-and-drop image or click to select
@@ -171,7 +141,7 @@ export class AppContainer extends AppComponent {
                     <app-text slot="title">
                         Options
                     </app-text>
-                    <app-group direction="column" gap="large">
+                    <app-group direction="column" gap="huge">
                         <app-group direction="column">
                             <app-paragraph bold>
                                 Background
@@ -209,7 +179,7 @@ export class AppContainer extends AppComponent {
                                 min=${value.min}
                                 max=${value.max}
                                 step=${value.step}
-                                value=${Number(this.getProperty(key))}
+                                value=${this.transforms[key]}
                                 @input=${this.handleNumericInput}
                             >
                                 ${value.name}
@@ -219,6 +189,108 @@ export class AppContainer extends AppComponent {
                 </app-card>
             </aside>
         `;
+    }
+
+    updated(properties: Map<string, unknown>) {
+        if (properties.has("file") || properties.has("background")) {
+            if (properties.has("file")) this.loadForegroundImage();
+            this.loadBackgroundImage();
+        }
+
+        this.drawCanvas();
+    }
+
+    firstUpdated() {
+        window.onresize = debounce(() => this.drawCanvas(), 50);
+    }
+
+    private async drawCanvas() {
+        const canvas = this.get("canvas");
+        const ctx = canvas.getContext("2d")!;
+
+        // Determine canvas dimensions
+        let width = canvas.parentElement?.clientWidth || 800;
+        let height = canvas.parentElement?.clientHeight || 600;
+
+        if (this.ratio) {
+            const [w, h] = this.ratio.split("/").map(Number);
+            if (w && h) {
+                const aspectRatio = w / h;
+                const desiredHeight = width / aspectRatio;
+
+                if (desiredHeight > height) {
+                    width = height * aspectRatio;
+                } else {
+                    height = desiredHeight;
+                }
+            }
+        }
+
+        // Set canvas resolution with device pixel ratio
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+
+        ctx.resetTransform();
+        ctx.scale(dpr, dpr);
+
+        // Draw background if available
+        if (this.backgroundImage) {
+            const imgRatio = this.backgroundImage.width / this.backgroundImage.height;
+            const canvasRatio = width / height;
+
+            const drawWidth = imgRatio > canvasRatio ? height * imgRatio * 1.05 : width * 1.05;
+            const drawHeight = imgRatio > canvasRatio ? height * 1.05 : width / imgRatio * 1.05;
+            const dx = (width - drawWidth) / 2;
+            const dy = (height - drawHeight) / 2;
+
+            ctx.save();
+            ctx.filter = `blur(${this.transforms.blur}px)`;
+            ctx.drawImage(this.backgroundImage, dx, dy, drawWidth, drawHeight);
+            ctx.restore();
+        }
+
+        // Draw foreground if available
+        if (this.foregroundImage) {
+            const img = this.foregroundImage;
+            const imgRatio = img.width / img.height;
+
+            // Calculate scaled dimensions while preserving aspect ratio
+            const drawHeight = Math.min(height, (width / imgRatio)) * this.transforms.scale;
+            const drawWidth = drawHeight * imgRatio;
+
+            ctx.save();
+            ctx.translate(width / 2, height / 2);
+
+            // Draw rounded rectangle with shadow and clipping
+            this.roundRect(ctx, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight, this.transforms.radius);
+
+            ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+            ctx.shadowBlur = this.transforms.shadow * 2;
+            ctx.shadowOffsetY = this.transforms.shadow;
+
+            ctx.fill();
+            ctx.clip();
+            ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+
+            ctx.restore();
+        }
+    }
+
+    private roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
     }
 
     private handleFileInput({ detail }: CustomEvent<Base64File>) {
@@ -237,15 +309,23 @@ export class AppContainer extends AppComponent {
 
     private handleNumericInput({ target }: InputEvent) {
         const { name, value } = target as HTMLInputElement;
-        this.setProperty(name, value);
+        this.transforms = {
+            ...this.transforms,
+            [name]: Number(value)
+        };
     }
 
-    getProperty(name: string) {
-        return getComputedStyle(document.documentElement).getPropertyValue(`--${name}`);
+    private loadBackgroundImage() {
+        const image = new Image();
+        image.src = BackgroundImages[this.background].previewPath;
+        image.onload = () => this.backgroundImage = image;
     }
 
-    setProperty(name: string, value: string) {
-        document.documentElement.style.setProperty(`--${name}`, value);
+    private loadForegroundImage() {
+        if (!this.file) return;
+        const image = new Image();
+        image.src = `data:${this.file.mimeType};base64,${this.file.data}`;
+        image.onload = () => this.foregroundImage = image;
     }
 }
 

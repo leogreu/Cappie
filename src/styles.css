@@ -127,14 +127,6 @@
     --active-brightness: .8;
     --disabled-opacity: .5;
 
-    /* default image values */
-    --blur: 0;
-    --scale: 0.75;
-    --radius: 10;
-    --shadow: 10;
-    --rotate_x: 0;
-    --rotate_y: 0;
-
     /* light scheme */
     color-scheme: light;
     --primary: rgb(var(--blue-6));
