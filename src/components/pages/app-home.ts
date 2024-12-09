@@ -99,14 +99,12 @@ export class AppHome extends AppComponent {
             display: grid;
             place-items: center;
             flex: 2.5;
-            background-color: var(--surface-1);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
         }
 
         canvas {
             max-width: 100%;
             max-height: 100%;
+            border-radius: var(--radius-lg);
         }
 
         file-dropzone {
@@ -382,9 +380,8 @@ export class AppHome extends AppComponent {
     }
 
     private loadBackgroundImage() {
-        const src = this.background in BackgroundImages
-            ? BackgroundImages[this.background].previewPath
-            : this.userImages.find(image => image.uuid === this.background)?.dataURL;
+        const src = BackgroundImages[this.background]?.path
+            ?? this.userImages.find(image => image.uuid === this.background)?.dataURL;
         if (!src) return;
 
         const image = new Image();
