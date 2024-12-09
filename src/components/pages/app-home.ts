@@ -318,6 +318,7 @@ export class AppHome extends AppComponent {
             ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
             ctx.shadowBlur = this.transforms.shadow * 2;
             ctx.shadowOffsetY = this.transforms.shadow;
+            ctx.fillStyle = "white";
 
             ctx.fill();
             ctx.clip();

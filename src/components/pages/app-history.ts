@@ -27,9 +27,19 @@ export class AppHistory extends AppComponent {
     render() {
         return html`
             <app-group direction="column" gap="large">
-                <app-title>
-                    History
-                </app-title>
+                <app-group justify="space-between" centered>
+                    <app-title>
+                        History
+                    </app-title>
+                    <app-button
+                        size="tiny"
+                        ?disabled=${!this.images.length}
+                        @click=${this.handleDeleteAll}
+                    >
+                        <app-icon name="trash-regular"></app-icon>
+                        <app-text>Delete all</app-text>
+                    </app-button>
+                </app-group>
                 ${this.images.length
                     ? html`
                         <app-group direction="grid" gap="large">
@@ -54,6 +64,18 @@ export class AppHistory extends AppComponent {
                 }
             </app-group>
         `;
+    }
+
+    private handleDeleteAll() {
+        document.createElement("app-dialog").show({
+            title: "Please confirm",
+            text: "Do you really want to delete all images?",
+            actions: {
+                Delete: () => {
+                    this.images.map(image => image.delete());
+                }
+            }
+        });
     }
 
     private handleImageClick({ target }: MouseEvent) {
