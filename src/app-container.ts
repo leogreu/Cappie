@@ -78,9 +78,11 @@ export class AppContainer extends AppComponent {
     @state()
     file?: Base64File;
 
-    // We'll store loaded images to avoid reloading them each time.
-    private backgroundImage?: HTMLImageElement;
-    private foregroundImage?: HTMLImageElement;
+    @state()
+    backgroundImage?: HTMLImageElement;
+
+    @state()
+    foregroundImage?: HTMLImageElement;
 
     static styles = css`
         :host {
@@ -189,9 +191,13 @@ export class AppContainer extends AppComponent {
         `;
     }
 
-    updated() {
-        // Whenever the component updates, re-draw if we have images
-        if (this.file) this.drawCanvas();
+    updated(properties: Map<string, unknown>) {
+        if (properties.has("file") || properties.has("background")) {
+            if (properties.has("file")) this.loadForegroundImage();
+            this.loadBackgroundImage();
+        }
+
+        this.drawCanvas();
     }
 
     firstUpdated() {
@@ -316,13 +322,11 @@ export class AppContainer extends AppComponent {
 
     private handleFileInput({ detail }: CustomEvent<Base64File>) {
         this.file = detail;
-        this.loadForegroundImage();
     }
 
     private handleBackgroundClick({ target }: MouseEvent) {
         const { id } = target as HTMLElement;
         this.background = Number(id);
-        this.loadBackgroundImage();
     }
 
     private handleRatioClick({ target }: MouseEvent) {
@@ -336,27 +340,19 @@ export class AppContainer extends AppComponent {
             ...this.transforms,
             [name]: Number(value)
         };
-        this.drawCanvas();
     }
 
     private loadBackgroundImage() {
-        const bg = new Image();
-        bg.src = BackgroundImages[this.background].previewPath;
-        bg.onload = () => {
-            this.backgroundImage = bg;
-            this.requestUpdate(); // re-draw once loaded
-        };
+        const image = new Image();
+        image.src = BackgroundImages[this.background].previewPath;
+        image.onload = () => this.backgroundImage = image;
     }
 
     private loadForegroundImage() {
         if (!this.file) return;
-        const fg = new Image();
-        fg.src = `data:${this.file.mimeType};base64,${this.file.data}`;
-        fg.onload = () => {
-            this.foregroundImage = fg;
-            this.loadBackgroundImage(); // ensure background is loaded as well
-            this.requestUpdate();
-        };
+        const image = new Image();
+        image.src = `data:${this.file.mimeType};base64,${this.file.data}`;
+        image.onload = () => this.foregroundImage = image;
     }
 }
 
