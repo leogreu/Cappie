@@ -20,11 +20,7 @@ export class AppHistory extends AppComponent {
         }
 
         [direction=grid] {
-            --min-width: 20rem;
-        }
-
-        image-button {
-            max-width: 25rem;
+            --min-width: 25rem;
         }
     `;
 
@@ -36,7 +32,7 @@ export class AppHistory extends AppComponent {
                 </app-title>
                 ${this.images.length
                     ? html`
-                        <app-group direction="grid">
+                        <app-group direction="grid" gap="large">
                             ${this.images.map(image => html`
                                 <image-button
                                     id=${image.uuid}
@@ -46,6 +42,9 @@ export class AppHistory extends AppComponent {
                                     <img src=${image.dataURL}>
                                 </image-button>
                             `)}
+                            <div></div>
+                            <div></div>
+                            <div></div>
                         </app-group>
                     `
                     : html`

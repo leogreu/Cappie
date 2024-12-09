@@ -27,7 +27,7 @@ export class AppIndex extends AppComponent {
         }
 
         .badge {
-            padding: .5rem .75rem;
+            padding: 0.5rem 1rem;
             font-size: var(--text-md);
             font-weight: var(--text-bold);
             color: white;
