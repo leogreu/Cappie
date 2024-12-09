@@ -1,6 +1,6 @@
 import { AppComponent, customElement, state, css, html } from "./components/base/app-component.ts";
+import { downloadObjectURL, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
-import type { Base64File } from "utils/files.ts";
 
 // Import all components to be used without import
 import.meta.glob("./components/**/*.ts", { eager: true });
@@ -39,6 +39,15 @@ const TransformOptions: {
     }
 };
 
+const TransformDefaults: {
+    [key in keyof typeof TransformOptions]: number;
+} = {
+    blur: 0,
+    scale: 0.75,
+    radius: 10,
+    shadow: 10
+};
+
 const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
 
 const BackgroundImages: {
@@ -68,12 +77,7 @@ export class AppContainer extends AppComponent {
     ratio = AspectRatios[0];
 
     @state()
-    transforms: Record<string, number> = {
-        blur: 0,
-        scale: 0.75,
-        radius: 10,
-        shadow: 10
-    };
+    transforms = { ...TransformDefaults };
 
     @state()
     file?: Base64File;
@@ -115,8 +119,12 @@ export class AppContainer extends AppComponent {
             flex: 1;
         }
 
-        app-card {
+        app-card, app-card > app-group {
             height: 100%;
+        }
+
+        footer {
+            margin-top: auto;
         }
 
         [direction=grid] {
@@ -185,6 +193,16 @@ export class AppContainer extends AppComponent {
                                 ${value.name}
                             </app-slider>
                         `)}
+                        <footer>
+                            <app-group>
+                                <app-button size="small" fullwidth @click=${this.handleDownloadClick}>
+                                    <app-text>Download</app-text>
+                                </app-button>
+                                <app-button size="small" fullwidth light @click=${this.handleResetClick}>
+                                    <app-text>Reset</app-text>
+                                </app-button>
+                            </app-group>
+                        </footer>
                     </app-group>
                 </app-card>
             </aside>
@@ -205,8 +223,9 @@ export class AppContainer extends AppComponent {
     }
 
     private async drawCanvas() {
-        const canvas = this.get("canvas");
-        const ctx = canvas.getContext("2d")!;
+        const canvas = this.find("canvas");
+        const ctx = canvas?.getContext("2d");
+        if (!canvas || !ctx) return;
 
         // Determine canvas dimensions
         let width = canvas.parentElement?.clientWidth || 800;
@@ -313,6 +332,15 @@ export class AppContainer extends AppComponent {
             ...this.transforms,
             [name]: Number(value)
         };
+    }
+
+    private handleDownloadClick() {
+        const url = this.get("canvas").toDataURL("image/jpeg", 0.9);
+        downloadObjectURL(url, "Cappie-Export");
+    }
+
+    private handleResetClick() {
+        this.file = undefined;
     }
 
     private loadBackgroundImage() {
