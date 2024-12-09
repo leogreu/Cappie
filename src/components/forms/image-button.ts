@@ -5,7 +5,14 @@ export class ImageButton extends AppComponent {
     @property({ type: Boolean })
     checked = false;
 
+    @property({ type: Boolean })
+    deletable = false;
+
     static styles = css`
+        :host {
+            position: relative;
+        }
+
         button {
             display: grid;
             place-items: center;
@@ -40,6 +47,20 @@ export class ImageButton extends AppComponent {
             height: 100%;
             object-fit: cover;
         }
+
+        app-button {
+            position: absolute;
+            top: 0;
+            right: 0;
+            transform: translateX(50%) translateY(-50%);
+            z-index: 20;
+            opacity: 0;
+            transition: opacity var(--duration-long) var(--duration-long);
+        }
+
+        :host(:hover) app-button {
+            opacity: 1;
+        }
     `;
 
     render() {
@@ -47,7 +68,20 @@ export class ImageButton extends AppComponent {
             <button tabindex="0">
                 <slot></slot>
             </button>
+            ${this.deletable
+                ? html`
+                    <app-button size="tiny" narrow rounded @click=${this.handleDeleteClick}>
+                        <app-icon name="xmark-solid"></app-icon>
+                    </app-button>
+                `
+                : undefined
+            }
         `;
+    }
+
+    private handleDeleteClick(event: MouseEvent) {
+        event.stopPropagation();
+        this.emit("delete-image", this.id);
     }
 }
 

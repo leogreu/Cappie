@@ -168,7 +168,12 @@ export class AppContainer extends AppComponent {
                                     </image-button>
                                 `)}
                                 ${this.userImages.map(file => html`
-                                    <image-button id=${file.uuid} ?checked=${file.uuid === this.background}>
+                                    <image-button
+                                        id=${file.uuid}
+                                        ?checked=${file.uuid === this.background}
+                                        deletable
+                                        @delete-image=${this.handleDeleteImage}
+                                    >
                                         <img src=${file.dataURL}>
                                     </image-button>
                                 `)}
@@ -333,10 +338,26 @@ export class AppContainer extends AppComponent {
         const { id } = target as HTMLElement;
         if (id === "new") {
             const { name, mimeType, size, data } = await uploadFile("base64Binary");
-            await new FileUpload(name, mimeType, size, data).commit();
+            const image = await new FileUpload(name, mimeType, size, data).commit();
+            this.background = image.uuid;
         } else if (id) {
             this.background = id;
         }
+    }
+
+    private handleDeleteImage({ detail }: CustomEvent<string>) {
+        document.createElement("app-dialog").show({
+            title: "Please confirm",
+            text: "Do you really want to delete the image?",
+            actions: {
+                Delete: () => {
+                    this.userImages.find(image => image.uuid === detail)?.delete();
+                    if (this.background === detail) {
+                        this.background = Object.keys(BackgroundImages)[0];
+                    }
+                }
+            }
+        });
     }
 
     private handleRatioClick({ target }: MouseEvent) {
