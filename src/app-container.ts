@@ -98,20 +98,9 @@ export class AppContainer extends AppComponent {
             overflow: hidden;
         }
 
-        figure {
-            display: grid;
-            place-items: center;
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        /* The canvas will be drawn inside figure */
         canvas {
-            display: block;
             max-width: 100%;
-            height: auto;
+            max-height: 100%;
         }
 
         file-dropzone {
@@ -137,11 +126,7 @@ export class AppContainer extends AppComponent {
         return html`
             <main>
                 ${this.file
-                    ? html`
-                        <figure>
-                            <canvas></canvas>
-                        </figure>
-                    `
+                    ? html`<canvas></canvas>`
                     : html`
                         <file-dropzone type="base64Binary" @file-input=${this.handleFileInput}>
                             Drag-and-drop image or click to select
@@ -227,7 +212,19 @@ export class AppContainer extends AppComponent {
             const [w, h] = this.ratio.split('/').map(r => parseFloat(r.trim()));
             if (!isNaN(w) && !isNaN(h)) {
                 const aspectRatio = w / h;
-                height = width / aspectRatio;
+        
+                // First, set height based on the initial width and ratio
+                let desiredHeight = width / aspectRatio;
+                
+                // Check if the desired height exceeds the parent container
+                if (desiredHeight > height) {
+                    // If it does, adjust the height to maxHeight and recalculate width
+                    desiredHeight = height;
+                    width = desiredHeight * aspectRatio;
+                }
+
+                // Assign the validated dimensions
+                height = desiredHeight;
             }
         }
 
