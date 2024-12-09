@@ -1,3 +1,5 @@
+import { AuditRecord } from "./audit-record.ts";
+import { definedPolicies } from "./authorization/policies.ts";
 import type { DataBlock, FieldDefinition } from "./data-block.ts";
 
 export class BlockStore {
@@ -32,6 +34,14 @@ export class BlockStore {
      */
     static addBlock(storeName: string, constructor: typeof DataBlock) {
         this.blocks[storeName] ??= constructor;
+
+        if (constructor.definition.audit) {
+            const auditedBlock = AuditRecord.fromBlock(constructor);
+            this.blocks["_" + auditedBlock.definition.store] ??= auditedBlock;
+
+            const policies = definedPolicies.get(constructor) ?? [];
+            definedPolicies.set(auditedBlock, AuditRecord.derivePolicies(policies));
+        }
 
         for (const [fieldName, fieldDefinition] of Object.entries(constructor.fields)) {
             if (!fieldDefinition.relation) continue;

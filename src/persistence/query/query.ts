@@ -1,6 +1,7 @@
 import { DataBlock, BlockReference } from "../data-block.ts";
 import { LiveQuery, CRUDTypes } from "./live-query.ts";
 import { QueryStore } from "./query-store.ts";
+import { AuditRecord, type RawData, type AuditData } from "../audit-record.ts";
 
 export type ExtendedKey = IDBValidKey | DataBlock | BlockReference<any> | undefined;
 
@@ -243,12 +244,14 @@ export class Collection<T extends typeof DataBlock> {
     }
 
     all(): Promise<InstanceType<T>[]>;
+    all(options: { raw: boolean }): Promise<RawData<InstanceType<T>>[]>;
     all(callback: (data: InstanceType<T>[], updatedBlock?: InstanceType<T>, crud?: CRUDTypes) => void): Promise<LiveQuery<InstanceType<T>>>;
     all(optionsOrCallback?: { raw: boolean } | ((data: InstanceType<T>[], updatedBlock?: InstanceType<T>, crud?: CRUDTypes) => void)) {
         return this.executeQuery(optionsOrCallback);
     }
 
     first(): Promise<InstanceType<T> | undefined>;
+    first(options: { raw: boolean }): Promise<RawData<InstanceType<T>>>;
     first(callback: (data?: InstanceType<T>, updatedBlock?: InstanceType<T>, crud?: CRUDTypes) => void): Promise<LiveQuery<InstanceType<T>>>;
     first(optionsOrCallback?: { raw: boolean } | ((data: InstanceType<T>, updatedBlock?: InstanceType<T>, crud?: CRUDTypes) => void)) {
         this.result.first = true;
@@ -267,5 +270,10 @@ export class Collection<T extends typeof DataBlock> {
         } else {
             return QueryStore.executeQuery<InstanceType<T>>(this.result);
         }
+    }
+
+    audit() {
+        this.result.block = AuditRecord.fromBlock(this.result.block);
+        return this.result.block.adapter.executeQuery(this.result) as Promise<AuditData<InstanceType<T>>[]>;
     }
 }

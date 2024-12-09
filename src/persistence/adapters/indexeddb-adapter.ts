@@ -1,6 +1,7 @@
 import { BlockStore } from "../block-store.ts";
 import { DataBlock, BlockDefinition } from "../data-block.ts";
 import { QueryResult } from "../query/query.ts";
+import { AuditRecord } from "persistence/audit-record.ts";
 import { updateReferencingParents } from "./adapter-utilities.ts";
 import type { PersistenceAdapter } from "./persistence-adapter.ts";
 
@@ -10,6 +11,7 @@ interface IndexedDBExtension {
     getDatabaseBlocks: (definition: BlockDefinition) => typeof DataBlock[];
     handleOnUpgradeNeeded: (request: IDBOpenDBRequest, blocks: typeof DataBlock[]) => void;
     getObjectStore: (definition: BlockDefinition, writeable: boolean) => Promise<IDBObjectStore>;
+    setAuditRecord: (definition: BlockDefinition, data: Record<string, unknown>) => void;
     promisifyRequest: <T>(request: IDBRequest) => Promise<T>;
     deleteProject: () => Promise<void>;
 }
@@ -23,9 +25,19 @@ export const IndexedDBAdapter: PersistenceAdapter & IndexedDBExtension = {
     },
 
     setObject: async function(definition, value, reason) {
+        // For audited blocks, identify insert or update method
+        const oldData = definition.audit
+            && await this.getObject(definition, BlockStore.blocks[definition.store].deriveKey(value));
+
         // Insert or update data
         const store = await this.getObjectStore(definition, true);
         await this.promisifyRequest(store.put(value));
+
+        if (definition.audit) {
+            const method = oldData ? "UPDATE" : "INSERT";
+            const auditRecord = new AuditRecord(method, reason).with(value);
+            this.setAuditRecord(definition, auditRecord);
+        }
     },
 
     setObjects: async function(definition, values, reasons) {
@@ -42,6 +54,11 @@ export const IndexedDBAdapter: PersistenceAdapter & IndexedDBExtension = {
         const store = await this.getObjectStore(definition, true);
         await this.promisifyRequest(store.delete(Object.values(key)));
         await updateReferencingParents(definition, key.uuid);
+
+        if (definition.audit && oldData) {
+            const auditRecord = new AuditRecord("DELETE", reason).with(oldData);
+            this.setAuditRecord(definition, auditRecord);
+        }
     },
 
     executeQuery: async function(queryResult) {
@@ -275,6 +292,12 @@ export const IndexedDBAdapter: PersistenceAdapter & IndexedDBExtension = {
         return database
             .transaction(definition.store, writeable ? "readwrite" : "readonly")
             .objectStore(definition.store);
+    },
+
+    setAuditRecord: async function (definition, data: Record<string, unknown>) {
+        const auditDefinition = { collection: AuditRecord.collectionName, store: definition.store };
+        const auditStore = await this.getObjectStore(auditDefinition, true);
+        await this.promisifyRequest(auditStore.put(data));
     },
 
     promisifyRequest: function<T>(request: IDBRequest) {

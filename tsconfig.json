@@ -10,6 +10,7 @@
         "allowImportingTsExtensions": true,
         "experimentalDecorators": true,
         "isolatedModules": true,
+        "skipLibCheck": true,
         "paths": {
             "persistence/*": ["./src/persistence/*"],
             "components/*": ["./src/components/*"],
