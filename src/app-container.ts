@@ -102,7 +102,7 @@ export class AppContainer extends AppComponent {
             display: grid;
             place-items: center;
             flex: 2.5;
-            background-color: var(--surface-2);
+            background-color: var(--surface-1);
             border-radius: var(--radius-lg);
             overflow: hidden;
         }

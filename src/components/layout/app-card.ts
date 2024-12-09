@@ -16,6 +16,7 @@ export class AppCard extends AppComponent {
         :host {
             display: flex;
             flex-direction: column;
+            background-color: var(--surface-1);
             border: 1px solid var(--surface-3);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-sm) var(--shadow);

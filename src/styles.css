@@ -177,7 +177,7 @@ html, body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    background-color: var(--surface-1);
+    background-color: var(--dust);
     display: flex;
     flex: 1;
     margin: 0;

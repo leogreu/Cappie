@@ -25,12 +25,12 @@ export class AppPlaceholder extends AppComponent {
 
         :host([bordered]) {
             border-radius: var(--radius-lg);
-            border: 1px dashed var(--contour);
+            border: 1px solid var(--surface-3);
         }
 
         :host([light]), :host([clickable]:hover) {
             background-color: var(--dust);
-            border-color: var(--text-3);
+            border-color: var(--contour);
         }
 
         :host([clickable]:hover) {
