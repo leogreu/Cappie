@@ -18,8 +18,8 @@ const TransformOptions: {
     blur: {
         name: "Blur",
         min: 0,
-        max: 10,
-        step: 0.5
+        max: 20,
+        step: 1
     },
     scale: {
         name: "Scale",
@@ -44,10 +44,10 @@ const TransformOptions: {
 const TransformDefaults: {
     [key in keyof typeof TransformOptions]: number;
 } = {
-    blur: 0,
+    blur: 10,
     scale: 0.75,
-    radius: 10,
-    shadow: 10
+    radius: 15,
+    shadow: 15
 };
 
 const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
@@ -57,20 +57,15 @@ const BackgroundImages: {
         path: string;
         previewPath: string;
     };
-} = {
-    1: {
-        path: "/background-1.jpg",
-        previewPath: "/background-1.jpg"
-    },
-    2: {
-        path: "/background-2.jpg",
-        previewPath: "/background-2.jpg"
-    },
-    3: {
-        path: "/background-3.jpg",
-        previewPath: "/background-3.jpg"
-    }
-};
+} = Object.fromEntries(
+    Array.from({ length: 5 }).map((_, index) => [
+        String(index + 1),
+        {
+            path: `backgrounds/${index + 1}.jpg`,
+            previewPath: `backgrounds/${index + 1}_small.jpg`,
+        }
+    ])
+);
 
 @customElement("app-container")
 export class AppContainer extends AppComponent {
@@ -98,6 +93,7 @@ export class AppContainer extends AppComponent {
     static styles = css`
         :host {
             display: flex;
+            flex: 1;
             padding: var(--size-8);
             gap: var(--size-8);
         }
