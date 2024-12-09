@@ -208,56 +208,41 @@ export class AppContainer extends AppComponent {
         const canvas = this.get("canvas");
         const ctx = canvas.getContext("2d")!;
 
-        // Determine aspect ratio for canvas sizing
-        // We will take the width as the container's width and height according to ratio.
+        // Determine canvas dimensions
         let width = canvas.parentElement?.clientWidth || 800;
         let height = canvas.parentElement?.clientHeight || 600;
 
-        // If ratio is set, compute height from width
         if (this.ratio) {
-            const [w, h] = this.ratio.split('/').map(r => parseFloat(r.trim()));
-            if (!isNaN(w) && !isNaN(h)) {
+            const [w, h] = this.ratio.split("/").map(Number);
+            if (w && h) {
                 const aspectRatio = w / h;
-        
-                // First, set height based on the initial width and ratio
-                let desiredHeight = width / aspectRatio;
-                
-                // Check if the desired height exceeds the parent container
-                if (desiredHeight > height) {
-                    // If it does, adjust the height to maxHeight and recalculate width
-                    desiredHeight = height;
-                    width = desiredHeight * aspectRatio;
-                }
+                const desiredHeight = width / aspectRatio;
 
-                // Assign the validated dimensions
-                height = desiredHeight;
+                if (desiredHeight > height) {
+                    width = height * aspectRatio;
+                } else {
+                    height = desiredHeight;
+                }
             }
         }
 
-        // Handle device pixel ratio
+        // Set canvas resolution with device pixel ratio
         const dpr = window.devicePixelRatio || 1;
         canvas.width = Math.floor(width * dpr);
         canvas.height = Math.floor(height * dpr);
-        canvas.style.width = width + 'px';
-        canvas.style.height = height + 'px';
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
 
         ctx.resetTransform();
         ctx.scale(dpr, dpr);
 
-        // Draw background image with blur
+        // Draw background if available
         if (this.backgroundImage) {
-            const imageRatio = this.backgroundImage.width / this.backgroundImage.height;
-            const targetRatio = width / height;
+            const imgRatio = this.backgroundImage.width / this.backgroundImage.height;
+            const canvasRatio = width / height;
 
-            let drawWidth, drawHeight;
-            if (imageRatio > targetRatio) {
-                drawHeight = height * 1.05;
-                drawWidth = drawHeight * imageRatio;
-            } else {
-                drawWidth = width * 1.05;
-                drawHeight = drawWidth / imageRatio;
-            }
-
+            const drawWidth = imgRatio > canvasRatio ? height * imgRatio * 1.05 : width * 1.05;
+            const drawHeight = imgRatio > canvasRatio ? height * 1.05 : width / imgRatio * 1.05;
             const dx = (width - drawWidth) / 2;
             const dy = (height - drawHeight) / 2;
 
@@ -267,40 +252,28 @@ export class AppContainer extends AppComponent {
             ctx.restore();
         }
 
-        // Draw foreground with transformations
+        // Draw foreground if available
         if (this.foregroundImage) {
-            // We'll translate to center, apply rotation, then translate back.
             const img = this.foregroundImage;
             const imgRatio = img.width / img.height;
-            let fgWidth = width;
-            let fgHeight = fgWidth / imgRatio;
-            if (fgHeight > height) {
-                fgHeight = height;
-                fgWidth = fgHeight * imgRatio;
-            }
-            // Adjust for user scale
-            fgWidth *= this.transforms.scale;
-            fgHeight *= this.transforms.scale;
+
+            // Calculate scaled dimensions while preserving aspect ratio
+            const drawHeight = Math.min(height, (width / imgRatio)) * this.transforms.scale;
+            const drawWidth = drawHeight * imgRatio;
 
             ctx.save();
+            ctx.translate(width / 2, height / 2);
 
-            const centerX = width / 2;
-            const centerY = height / 2;
-            ctx.translate(centerX, centerY);
+            // Draw rounded rectangle with shadow and clipping
+            this.roundRect(ctx, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight, this.transforms.radius);
 
-            // Always apply border radius by clipping (even if radius=0)
-            this.roundRect(ctx, -fgWidth/2, -fgHeight/2, fgWidth, fgHeight, this.transforms.radius);
-
-            // Apply shadow first using the same path
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
             ctx.shadowBlur = this.transforms.shadow * 2;
-            ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = this.transforms.shadow;
-            ctx.fillStyle = 'white';
-            ctx.fill();
 
+            ctx.fill();
             ctx.clip();
-            ctx.drawImage(img, -fgWidth/2, -fgHeight/2, fgWidth, fgHeight);
+            ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
 
             ctx.restore();
         }
