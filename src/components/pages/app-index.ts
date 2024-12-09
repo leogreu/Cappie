@@ -6,19 +6,43 @@ export class AppIndex extends AppComponent {
         :host {
             display: flex;
             flex: 1;
+            justify-content: center;
+            align-items: center;
             padding: var(--size-8);
         }
 
-        main {
-            display: flex;
+        app-group:first-child {
+            max-width: 40rem;
+            text-align: center;
+        }
+
+        app-badge {
+            box-shadow: var(--shadow-sm) var(--shadow);
         }
     `;
 
     render() {
         return html`
-            <main>
-                Index
-            </main>
+            <app-group direction="column" gap="huge" centered>
+                <app-badge size="large" rounded>
+                    <app-title size="micro" bold>
+                        🧢 &nbsp;Cappie
+                    </app-title>
+                </app-badge>
+                <app-group direction="column">
+                    <app-title size="large">
+                        Beautiful Screenshots in Seconds
+                    </app-title>
+                    <app-paragraph size="large">
+                        Cappie allows you to easily create beautiful and colorful screenshots. Without registration, fully offline, and super fast.
+                    </app-paragraph>
+                </app-group>
+                <a href="/home">
+                    <app-button type="primary" size="small">
+                        Start now
+                    </app-button>
+                </a>
+            </app-group>
         `;
     }
 }
