@@ -1,6 +1,8 @@
 import { AppComponent, customElement, state, css, html } from "./components/base/app-component.ts";
-import { downloadObjectURL, type Base64File } from "utils/files.ts";
+import { downloadObjectURL, uploadFile, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
+import { all } from "persistence/controller/lit-controller.ts";
+import { FileUpload } from "./models/file-upload.ts";
 
 // Import all components to be used without import
 import.meta.glob("./components/**/*.ts", { eager: true });
@@ -51,27 +53,29 @@ const TransformDefaults: {
 const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
 
 const BackgroundImages: {
-    path: string;
-    previewPath: string;
-}[] = [
-    {
+    [key: string]: {
+        path: string;
+        previewPath: string;
+    };
+} = {
+    1: {
         path: "/background-1.jpg",
         previewPath: "/background-1.jpg"
     },
-    {
+    2: {
         path: "/background-2.jpg",
         previewPath: "/background-2.jpg"
     },
-    {
+    3: {
         path: "/background-3.jpg",
         previewPath: "/background-3.jpg"
     }
-];
+};
 
 @customElement("app-container")
 export class AppContainer extends AppComponent {
     @state()
-    background = 0;
+    background = Object.keys(BackgroundImages)[0];
 
     @state()
     ratio = AspectRatios[0];
@@ -87,6 +91,9 @@ export class AppContainer extends AppComponent {
 
     @state()
     foregroundImage?: HTMLImageElement;
+
+    @all(FileUpload.where())
+    userImages: FileUpload[] = [];
 
     static styles = css`
         :host {
@@ -155,13 +162,19 @@ export class AppContainer extends AppComponent {
                                 Background
                             </app-paragraph>
                             <app-group direction="grid" @click=${this.handleBackgroundClick}>
-                                ${BackgroundImages.map((image, index) => html`
-                                    <image-button
-                                        id=${index}
-                                        src=${image.previewPath}
-                                        ?checked=${index === this.background}
-                                    ></image-button>
+                                ${Object.entries(BackgroundImages).map(([key, value]) => html`
+                                    <image-button id=${key} ?checked=${key === this.background}>
+                                        <img src=${value.previewPath}>
+                                    </image-button>
                                 `)}
+                                ${this.userImages.map(file => html`
+                                    <image-button id=${file.uuid} ?checked=${file.uuid === this.background}>
+                                        <img src=${file.dataURL}>
+                                    </image-button>
+                                `)}
+                                <image-button id="new">
+                                    <app-icon name="plus-light"></app-icon>
+                                </image-button>
                             </app-group>
                         </app-group>
                         <app-group direction="column">
@@ -316,9 +329,14 @@ export class AppContainer extends AppComponent {
         this.file = detail;
     }
 
-    private handleBackgroundClick({ target }: MouseEvent) {
+    private async handleBackgroundClick({ target }: MouseEvent) {
         const { id } = target as HTMLElement;
-        this.background = Number(id);
+        if (id === "new") {
+            const { name, mimeType, size, data } = await uploadFile("base64Binary");
+            await new FileUpload(name, mimeType, size, data).commit();
+        } else if (id) {
+            this.background = id;
+        }
     }
 
     private handleRatioClick({ target }: MouseEvent) {
@@ -344,13 +362,19 @@ export class AppContainer extends AppComponent {
     }
 
     private loadBackgroundImage() {
+        const src = this.background in BackgroundImages
+            ? BackgroundImages[this.background].previewPath
+            : this.userImages.find(image => image.uuid === this.background)?.dataURL;
+        if (!src) return;
+
         const image = new Image();
-        image.src = BackgroundImages[this.background].previewPath;
+        image.src = src;
         image.onload = () => this.backgroundImage = image;
     }
 
     private loadForegroundImage() {
         if (!this.file) return;
+
         const image = new Image();
         image.src = `data:${this.file.mimeType};base64,${this.file.data}`;
         image.onload = () => this.foregroundImage = image;
