@@ -1,4 +1,4 @@
-import { AppComponent, customElement, css, html } from "../base/app-component.ts";
+import { AppComponent, customElement, css, html } from "components/base/app-component.ts";
 
 @customElement("app-history")
 export class AppHistory extends AppComponent {

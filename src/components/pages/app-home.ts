@@ -1,4 +1,4 @@
-import { AppComponent, customElement, state, css, html } from "../base/app-component.ts";
+import { AppComponent, customElement, state, css, html } from "components/base/app-component.ts";
 import { downloadObjectURL, uploadFile, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
 import { all } from "persistence/controller/lit-controller.ts";

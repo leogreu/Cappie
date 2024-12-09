@@ -1,4 +1,4 @@
-import { AppComponent, customElement, css, html } from "../base/app-component.ts";
+import { AppComponent, customElement, css, html } from "components/base/app-component.ts";
 
 @customElement("app-index")
 export class AppIndex extends AppComponent {
@@ -17,7 +17,7 @@ export class AppIndex extends AppComponent {
             object-fit: cover;
             object-position: top;
             scale: 1.1;
-            filter: blur(25px) brightness(0.9);
+            filter: blur(25px);
         }
 
         img + app-group {
@@ -55,6 +55,7 @@ export class AppIndex extends AppComponent {
 
         app-button {
             --surface-1: white;
+            --primary: rgb(var(--blue-6));
         }
 
         app-group:first-child {
@@ -64,6 +65,12 @@ export class AppIndex extends AppComponent {
 
         app-badge {
             box-shadow: var(--shadow-sm) var(--shadow);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :host > img {
+                filter: blur(25px) brightness(.75);
+            }
         }
     `;
 
@@ -77,15 +84,15 @@ export class AppIndex extends AppComponent {
                 </app-group>
                 <app-group direction="column">
                     <h1>
-                        Vibrant Screenshots in Seconds
+                        Vibrant screenshots in seconds
                     </h1>
                     <h2>
-                        With Cappie you can transform your screenshots into vibrant images. Without registration and super fast.
+                        With Cappie, you can transform your screenshots into vibrant images. Without registration and super fast.
                     </h2>
                 </app-group>
                 <a href="/home">
                     <app-button type="primary" size="small">
-                        Start now
+                        Create your image
                     </app-button>
                 </a>
             </app-group>
