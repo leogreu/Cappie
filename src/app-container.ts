@@ -178,9 +178,9 @@ export class AppContainer extends AppComponent {
                                         <img src=${file.dataURL}>
                                     </image-button>
                                 `)}
-                                <image-button id="new">
-                                    <app-icon name="plus-light"></app-icon>
-                                </image-button>
+                                <app-button id="new" fullwidth style="aspect-ratio: 16 / 9;">
+                                    <app-icon name="plus-regular"></app-icon>
+                                </app-button>
                             </app-group>
                         </app-group>
                         <app-group direction="column">

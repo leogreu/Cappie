@@ -14,17 +14,12 @@ export class ImageButton extends AppComponent {
         }
 
         button {
-            display: grid;
-            place-items: center;
-            width: 100%;
-            height: 100%;
+            display: inline-flex;
             padding: 0;
             margin: 0;
             aspect-ratio: 16 / 9;
-            font-size: var(--text-xl);
             border: 1px solid var(--contour);
             border-radius: var(--radius-md);
-            background-color: var(--surface-1);
             cursor: pointer;
             overflow: hidden;
         }
@@ -34,18 +29,11 @@ export class ImageButton extends AppComponent {
             box-shadow: var(--ring-md) var(--surface-1), var(--ring-lg) var(--primary);
         }
 
-        :host(:not([disabled])) button:hover {
-            filter: brightness(var(--hover-brightness));
-        }
-
-        slot {
-            pointer-events: none;
-        }
-
         slot::slotted(img) {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            pointer-events: none;
         }
 
         app-button {
