@@ -59,17 +59,13 @@ export class AppSlider extends AppComponent {
             border-radius: var(--radius-full);
         }
 
-        app-badge {
-            position: absolute;
-            transform: translateX(-50%) translateY(250%);
-        }
-
         :host(:not(:hover)) app-badge {
             display: none;
         }
     `;
 
     render() {
+        const left = ((this.value - this.min) * 100) / (this.max - this.min);
         return html`
             <app-group direction="column">
                 <app-paragraph bold>
@@ -89,7 +85,7 @@ export class AppSlider extends AppComponent {
                 </app-group>
                 <app-badge
                     narrow
-                    style="left: ${((this.value ?? 0 - this.min) * 100) / (this.max - this.min)}%;"
+                    style="position: absolute; left: ${left}%; transform: translateX(-${left}%);"
                 >
                     ${this.value}
                 </app-badge>
