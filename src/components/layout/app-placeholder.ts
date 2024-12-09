@@ -29,7 +29,6 @@ export class AppPlaceholder extends AppComponent {
         }
 
         :host([light]), :host([clickable]:hover) {
-            background-color: var(--dust);
             border-color: var(--contour);
         }
 

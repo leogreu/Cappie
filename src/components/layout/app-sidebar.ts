@@ -1,5 +1,10 @@
 import { AppComponent, customElement, css, html } from "components/base/app-component.ts";
 
+const Routes = {
+    "/home": "house",
+    "/about": "circle-info"
+};
+
 @customElement("app-sidebar")
 export class AppSidebar extends AppComponent {
     static styles = css`
@@ -10,22 +15,26 @@ export class AppSidebar extends AppComponent {
             box-shadow: var(--shadow-sm) var(--shadow);
         }
 
-        app-group:first-child {
+        app-group {
             height: 100%
+        }
+
+        a:nth-child(3) {
+            margin-top: auto;
         }
     `;
 
     render() {
         return html`
-            <app-group direction="column" justify="space-between" centered>
-                <app-group direction="column" gap="huge" centered>
-                    <a href="/">
-                        <img src="/favicon.svg" width="24">
+            <app-group direction="column" gap="huge" centered>
+                <a href="/">
+                    <img src="/favicon.svg" width="24">
+                </a>
+                ${Object.entries(Routes).map(([key, value]) => html`
+                    <a href=${key}>
+                        <icon-button size="medium" name="${value}-solid"></icon-button>
                     </a>
-                    <icon-button size="medium" name="house-solid"></icon-button>
-                    <icon-button size="medium" name="image-solid"></icon-button>
-                </app-group>
-                <icon-button size="medium" name="circle-info-solid"></icon-button>
+                `)}
             </app-group>
         `;
     }

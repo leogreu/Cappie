@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vaadin/router": "^2.0.0",
     "lit": "^2.7.2"
   },
   "devDependencies": {

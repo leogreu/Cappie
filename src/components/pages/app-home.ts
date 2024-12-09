@@ -1,11 +1,8 @@
-import { AppComponent, customElement, state, css, html } from "./components/base/app-component.ts";
+import { AppComponent, customElement, state, css, html } from "../base/app-component.ts";
 import { downloadObjectURL, uploadFile, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
 import { all } from "persistence/controller/lit-controller.ts";
-import { FileUpload } from "./models/file-upload.ts";
-
-// Import all components to be used without import
-import.meta.glob("./components/**/*.ts", { eager: true });
+import { FileUpload } from "../../models/file-upload.ts";
 
 const TransformOptions: {
     [key: string]: {
@@ -67,8 +64,8 @@ const BackgroundImages: {
     ])
 );
 
-@customElement("app-container")
-export class AppContainer extends AppComponent {
+@customElement("app-home")
+export class AppHome extends AppComponent {
     @state()
     background = Object.keys(BackgroundImages)[0];
 
@@ -406,6 +403,6 @@ export class AppContainer extends AppComponent {
 
 declare global {
     interface HTMLElementTagNameMap {
-        "app-container": AppContainer;
+        "app-home": AppHome;
     }
 }
