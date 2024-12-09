@@ -1,4 +1,5 @@
 import { AppComponent, customElement, property, css, html } from "components/base/app-component.ts";
+import { live } from "lit/directives/live.js";
 
 @customElement("app-slider")
 export class AppSlider extends AppComponent {
@@ -79,7 +80,7 @@ export class AppSlider extends AppComponent {
                     min=${this.min}
                     max=${this.max}
                     step=${this.step}
-                    value=${this.value}
+                    .value=${live(String(this.value))}
                     @input=${this.handleInput}
                 >
                 <app-group justify="space-between">

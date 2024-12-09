@@ -156,6 +156,12 @@ export class AppContainer extends AppComponent {
                     <app-text slot="title">
                         Options
                     </app-text>
+                    <icon-button
+                        slot="action"
+                        name="arrow-rotate-left-regular"
+                        size="small"
+                        @click=${this.handleDefaultsClick}
+                    ></icon-button>
                     <app-group direction="column" gap="huge">
                         <app-group direction="column">
                             <app-paragraph bold>
@@ -332,6 +338,10 @@ export class AppContainer extends AppComponent {
 
     private handleFileInput({ detail }: CustomEvent<Base64File>) {
         this.file = detail;
+    }
+
+    private handleDefaultsClick() {
+        this.transforms = { ...TransformDefaults };
     }
 
     private async handleBackgroundClick({ target }: MouseEvent) {
