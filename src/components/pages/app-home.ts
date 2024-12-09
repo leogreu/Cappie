@@ -49,11 +49,6 @@ const TransformDefaults: {
 
 const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
 
-const Orientations = {
-    landscape: "landscape",
-    portrait: "portrait"
-} as const;
-
 const BackgroundImages: {
     [key: string]: {
         path: string;
@@ -78,7 +73,7 @@ export class AppHome extends AppComponent {
     ratio = AspectRatios[0];
 
     @state()
-    orientation: keyof typeof Orientations = Orientations.landscape;
+    portrait = false;
 
     @state()
     transforms = { ...TransformDefaults };
@@ -188,7 +183,12 @@ export class AppHome extends AppComponent {
                                     Ratio
                                 </app-paragraph>
                                 <icon-button
-                                    name="image-${this.orientation}-regular"
+                                    name="rectangle-regular"
+                                    size="small"
+                                    style="
+                                        rotate: ${this.portrait? '90' : '0'}deg;
+                                        transition: rotate var(--duration-long);
+                                    "
                                     @click=${this.handlePortraitClick}
                                 ></icon-button>
                             </app-group>
@@ -258,7 +258,7 @@ export class AppHome extends AppComponent {
 
         if (this.ratio) {
             const numbers = this.ratio.split("/").map(Number);
-            if (this.orientation === "portrait") numbers.reverse();
+            if (this.portrait) numbers.reverse();
 
             const [w, h] = numbers;
             if (w && h) {
@@ -380,7 +380,7 @@ export class AppHome extends AppComponent {
     }
 
     private handlePortraitClick() {
-        this.orientation = this.orientation === "landscape" ? "portrait" : "landscape";
+        this.portrait = !this.portrait;
     }
 
     private handleNumericInput({ target }: InputEvent) {
