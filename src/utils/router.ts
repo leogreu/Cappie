@@ -10,7 +10,7 @@ export const routes: {
         component: "app-index"
     },
     {
-        path: "/home",
+        path: "/home/:uuid?",
         component: "app-home",
         icon: "house"
     },

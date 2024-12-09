@@ -3,6 +3,7 @@ import { downloadObjectURL, uploadFile, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
 import { all } from "persistence/controller/lit-controller.ts";
 import { FileUpload } from "../../models/file-upload.ts";
+import type { RouterLocation } from "@vaadin/router";
 
 const TransformOptions: {
     [key: string]: {
@@ -58,8 +59,8 @@ const BackgroundImages: {
     Array.from({ length: 5 }).map((_, index) => [
         String(index + 1),
         {
-            path: `backgrounds/${index + 1}.jpg`,
-            previewPath: `backgrounds/${index + 1}_small.jpg`,
+            path: `/backgrounds/${index + 1}.jpg`,
+            previewPath: `/backgrounds/${index + 1}_small.jpg`,
         }
     ])
 );
@@ -79,7 +80,7 @@ export class AppHome extends AppComponent {
     transforms = { ...TransformDefaults };
 
     @state()
-    file?: Base64File;
+    file?: FileUpload;
 
     @state()
     backgroundImage?: HTMLImageElement;
@@ -87,7 +88,7 @@ export class AppHome extends AppComponent {
     @state()
     foregroundImage?: HTMLImageElement;
 
-    @all(FileUpload.where({ type: "background" }))
+    @all(FileUpload.where({ type: "background" }).sort("createdDate").asc())
     userImages: FileUpload[] = [];
 
     static styles = css`
@@ -340,11 +341,9 @@ export class AppHome extends AppComponent {
         ctx.closePath();
     }
 
-    private handleFileInput({ detail }: CustomEvent<Base64File>) {
-        this.file = detail;
-
+    private async handleFileInput({ detail }: CustomEvent<Base64File>) {
         const { name, mimeType, size, data } = detail;
-        new FileUpload("screenshot", name, mimeType, size, data).commit();
+        this.file = await new FileUpload("screenshot", name, mimeType, size, data).commit();
     }
 
     private handleResetClick() {
@@ -417,8 +416,12 @@ export class AppHome extends AppComponent {
         if (!this.file) return;
 
         const image = new Image();
-        image.src = `data:${this.file.mimeType};base64,${this.file.data}`;
+        image.src = this.file.dataURL;
         image.onload = () => this.foregroundImage = image;
+    }
+
+    async onBeforeEnter(location: RouterLocation) { 
+        this.file = await FileUpload.where({ uuid: location.params.uuid as string }).first();
     }
 }
 

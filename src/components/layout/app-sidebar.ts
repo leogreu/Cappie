@@ -29,7 +29,7 @@ export class AppSidebar extends AppComponent {
                 ${routes.map(route => {
                     const active = route.path === this.route;
                     return html`
-                        <a href=${route.path}>
+                        <a href=${route.path.replace(/\/:.+/, "")}>
                             ${route.icon
                                 ? html`
                                     <icon-button

@@ -4,7 +4,7 @@ import { FileUpload } from "../../models/file-upload.ts";
 
 @customElement("app-history")
 export class AppHistory extends AppComponent {
-    @all(FileUpload.where({ type: "screenshot" }))
+    @all(FileUpload.where({ type: "screenshot" }).sort("createdDate").asc())
     images: FileUpload[] = [];
 
     static styles = css`
@@ -37,6 +37,7 @@ export class AppHistory extends AppComponent {
                                 <image-button
                                     id=${image.uuid}
                                     deletable
+                                    @click=${this.handleImageClick}
                                     @delete-image=${this.handleDeleteImage}
                                 >
                                     <img src=${image.dataURL}>
@@ -53,6 +54,11 @@ export class AppHistory extends AppComponent {
                 }
             </app-group>
         `;
+    }
+
+    private handleImageClick({ target }: MouseEvent) {
+        const { id } = target as HTMLElement;
+        location.href = `/home/${id}`;
     }
 
     private handleDeleteImage({ detail }: CustomEvent<string>) {
