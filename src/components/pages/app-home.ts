@@ -1,11 +1,8 @@
-import { AppComponent, customElement, state, css, html } from "./components/base/app-component.ts";
+import { AppComponent, customElement, state, css, html } from "components/base/app-component.ts";
 import { downloadObjectURL, uploadFile, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
 import { all } from "persistence/controller/lit-controller.ts";
-import { FileUpload } from "./models/file-upload.ts";
-
-// Import all components to be used without import
-import.meta.glob("./components/**/*.ts", { eager: true });
+import { FileUpload } from "../../models/file-upload.ts";
 
 const TransformOptions: {
     [key: string]: {
@@ -67,13 +64,16 @@ const BackgroundImages: {
     ])
 );
 
-@customElement("app-container")
-export class AppContainer extends AppComponent {
+@customElement("app-home")
+export class AppHome extends AppComponent {
     @state()
     background = Object.keys(BackgroundImages)[0];
 
     @state()
     ratio = AspectRatios[0];
+
+    @state()
+    portrait = false;
 
     @state()
     transforms = { ...TransformDefaults };
@@ -102,14 +102,12 @@ export class AppContainer extends AppComponent {
             display: grid;
             place-items: center;
             flex: 2.5;
-            background-color: var(--surface-2);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
         }
 
         canvas {
             max-width: 100%;
             max-height: 100%;
+            border-radius: var(--radius-lg);
         }
 
         file-dropzone {
@@ -180,9 +178,20 @@ export class AppContainer extends AppComponent {
                             </app-group>
                         </app-group>
                         <app-group direction="column">
-                            <app-paragraph bold>
-                                Ratio
-                            </app-paragraph>
+                            <app-group justify="space-between" style="align-items: end;">
+                                <app-paragraph bold>
+                                    Ratio
+                                </app-paragraph>
+                                <icon-button
+                                    name="rectangle-regular"
+                                    size="small"
+                                    style="
+                                        rotate: ${this.portrait? '90' : '0'}deg;
+                                        transition: rotate var(--duration-long);
+                                    "
+                                    @click=${this.handlePortraitClick}
+                                ></icon-button>
+                            </app-group>
                             <app-group @click=${this.handleRatioClick}>
                                 ${AspectRatios.map(ratio => html`
                                     <app-button
@@ -248,7 +257,10 @@ export class AppContainer extends AppComponent {
         let height = canvas.parentElement?.clientHeight || 600;
 
         if (this.ratio) {
-            const [w, h] = this.ratio.split("/").map(Number);
+            const numbers = this.ratio.split("/").map(Number);
+            if (this.portrait) numbers.reverse();
+
+            const [w, h] = numbers;
             if (w && h) {
                 const aspectRatio = w / h;
                 const desiredHeight = width / aspectRatio;
@@ -367,6 +379,10 @@ export class AppContainer extends AppComponent {
         this.ratio = id;
     }
 
+    private handlePortraitClick() {
+        this.portrait = !this.portrait;
+    }
+
     private handleNumericInput({ target }: InputEvent) {
         const { name, value } = target as HTMLInputElement;
         this.transforms = {
@@ -385,9 +401,8 @@ export class AppContainer extends AppComponent {
     }
 
     private loadBackgroundImage() {
-        const src = this.background in BackgroundImages
-            ? BackgroundImages[this.background].previewPath
-            : this.userImages.find(image => image.uuid === this.background)?.dataURL;
+        const src = BackgroundImages[this.background]?.path
+            ?? this.userImages.find(image => image.uuid === this.background)?.dataURL;
         if (!src) return;
 
         const image = new Image();
@@ -406,6 +421,6 @@ export class AppContainer extends AppComponent {
 
 declare global {
     interface HTMLElementTagNameMap {
-        "app-container": AppContainer;
+        "app-home": AppHome;
     }
 }

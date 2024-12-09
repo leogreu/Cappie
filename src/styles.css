@@ -145,6 +145,7 @@
     --text-3: rgb(var(--gray-4));
     --contour: rgb(var(--gray-3));
     --translucent: rgba(255, 255, 255, .5);
+    --shadow: rgba(var(--gray-9), .15);
     --dust: rgb(var(--gray-0));
 }
 
@@ -168,6 +169,7 @@
         --text-3: rgb(var(--gray-4));
         --contour: rgb(var(--gray-6));
         --translucent: rgba(var(--gray-9), .5);
+        --shadow: transparent;
         --dust: rgb(var(--gray-8));
     }
 }
@@ -177,7 +179,7 @@ html, body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    background-color: var(--surface-1);
+    background-color: var(--dust);
     display: flex;
     flex: 1;
     margin: 0;
