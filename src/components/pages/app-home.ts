@@ -49,6 +49,11 @@ const TransformDefaults: {
 
 const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
 
+const Orientations = {
+    landscape: "landscape",
+    portrait: "portrait"
+} as const;
+
 const BackgroundImages: {
     [key: string]: {
         path: string;
@@ -71,6 +76,9 @@ export class AppHome extends AppComponent {
 
     @state()
     ratio = AspectRatios[0];
+
+    @state()
+    orientation: keyof typeof Orientations = Orientations.landscape;
 
     @state()
     transforms = { ...TransformDefaults };
@@ -175,9 +183,15 @@ export class AppHome extends AppComponent {
                             </app-group>
                         </app-group>
                         <app-group direction="column">
-                            <app-paragraph bold>
-                                Ratio
-                            </app-paragraph>
+                            <app-group justify="space-between" style="align-items: end;">
+                                <app-paragraph bold>
+                                    Ratio
+                                </app-paragraph>
+                                <icon-button
+                                    name="image-${this.orientation}-regular"
+                                    @click=${this.handlePortraitClick}
+                                ></icon-button>
+                            </app-group>
                             <app-group @click=${this.handleRatioClick}>
                                 ${AspectRatios.map(ratio => html`
                                     <app-button
@@ -243,7 +257,10 @@ export class AppHome extends AppComponent {
         let height = canvas.parentElement?.clientHeight || 600;
 
         if (this.ratio) {
-            const [w, h] = this.ratio.split("/").map(Number);
+            const numbers = this.ratio.split("/").map(Number);
+            if (this.orientation === "portrait") numbers.reverse();
+
+            const [w, h] = numbers;
             if (w && h) {
                 const aspectRatio = w / h;
                 const desiredHeight = width / aspectRatio;
@@ -360,6 +377,10 @@ export class AppHome extends AppComponent {
     private handleRatioClick({ target }: MouseEvent) {
         const { id } = target as HTMLElement;
         this.ratio = id;
+    }
+
+    private handlePortraitClick() {
+        this.orientation = this.orientation === "landscape" ? "portrait" : "landscape";
     }
 
     private handleNumericInput({ target }: InputEvent) {
