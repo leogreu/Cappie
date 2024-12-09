@@ -87,7 +87,7 @@ export class AppHome extends AppComponent {
     @state()
     foregroundImage?: HTMLImageElement;
 
-    @all(FileUpload.where())
+    @all(FileUpload.where({ type: "background" }))
     userImages: FileUpload[] = [];
 
     static styles = css`
@@ -342,6 +342,9 @@ export class AppHome extends AppComponent {
 
     private handleFileInput({ detail }: CustomEvent<Base64File>) {
         this.file = detail;
+
+        const { name, mimeType, size, data } = detail;
+        new FileUpload("screenshot", name, mimeType, size, data).commit();
     }
 
     private handleResetClick() {
@@ -352,7 +355,7 @@ export class AppHome extends AppComponent {
         const { id } = target as HTMLElement;
         if (id === "new") {
             const { name, mimeType, size, data } = await uploadFile("base64Binary");
-            const image = await new FileUpload(name, mimeType, size, data).commit();
+            const image = await new FileUpload("background", name, mimeType, size, data).commit();
             this.background = image.uuid;
         } else if (id) {
             this.background = id;

@@ -18,7 +18,7 @@ export class ImageButton extends AppComponent {
             padding: 0;
             margin: 0;
             aspect-ratio: 16 / 9;
-            border: 1px solid var(--contour);
+            border: none;
             border-radius: var(--radius-md);
             cursor: pointer;
             overflow: hidden;
