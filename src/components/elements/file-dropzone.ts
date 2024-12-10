@@ -54,6 +54,15 @@ export class FileDropzone extends AppComponent {
         });
     };
 
+    private handlePaste = async (event: ClipboardEvent) => {
+        if (!this.active || !event.clipboardData) return;
+
+        Array.from(event.clipboardData.files).forEach(async item => {
+            const file = await readFile(item, this.type as "text"); // or "base64Binary"
+            this.emitInputEvent(file);
+        });
+    }
+
     private emitInputEvent(file: TextFile | Base64File) {
         if (!this.megabyteLimit || file.size <= (this.megabyteLimit * 1024 * 1024)) {
             this.emit<TextFile | Base64File>("file-input", file);
@@ -68,6 +77,15 @@ export class FileDropzone extends AppComponent {
     private handleDragleave() {
         this.drag = false;
     };
+
+    firstUpdated() {
+        window.addEventListener("paste", this.handlePaste);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        window.removeEventListener("paste", this.handlePaste);
+    }
 }
 
 declare global {

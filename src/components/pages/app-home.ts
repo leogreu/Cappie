@@ -82,7 +82,7 @@ export class AppHome extends AppComponent {
                     ? html`<canvas></canvas>`
                     : html`
                         <file-dropzone type="base64Binary" @file-input=${this.handleFileInput}>
-                            Drag-and-drop image or click to select
+                            Drop, paste, or click to select an image
                         </file-dropzone>
                     `
                 }
@@ -191,20 +191,7 @@ export class AppHome extends AppComponent {
         `;
     }
 
-    updated(properties: Map<string, unknown>) {
-        if (properties.has("composition")) {
-            this.loadForegroundImage();
-            this.loadBackgroundImage();
-        } else if (properties.has("backgrounds")) {
-            this.loadBackgroundImage();
-        }
-    }
-
-    firstUpdated() {
-        window.onresize = debounce(() => this.drawCanvas(), 50);
-    }
-
-    private async drawCanvas() {
+    private drawCanvas = () => {
         const canvas = this.find("canvas");
         const ctx = canvas?.getContext("2d");
         if (!this.composition || !canvas || !ctx) return;
@@ -370,7 +357,18 @@ export class AppHome extends AppComponent {
 
     private handleDownloadClick() {
         const url = this.get("canvas").toDataURL("image/jpeg", 0.9);
-        downloadObjectURL(url, "Cappie-Export");
+        downloadObjectURL(url, `cappie-${new Date().getTime()}`);
+    }
+
+    private handleCopy = async () => {
+        const type = "image/png";
+        const canvas = this.get("canvas");
+
+        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, type));
+        if (!blob) return;
+
+        const item = new ClipboardItem({ [type]: blob });
+        await navigator.clipboard.write([item]);
     }
 
     private loadBackgroundImage() {
@@ -415,6 +413,26 @@ export class AppHome extends AppComponent {
 
     async onBeforeEnter(location: RouterLocation) { 
         this.composition = await ComposedImage.where({ uuid: location.params.uuid as string }).first();
+    }
+
+    updated(properties: Map<string, unknown>) {
+        if (properties.has("composition")) {
+            this.loadForegroundImage();
+            this.loadBackgroundImage();
+        } else if (properties.has("backgrounds")) {
+            this.loadBackgroundImage();
+        }
+    }
+
+    firstUpdated() {
+        window.addEventListener("resize", this.drawCanvas);
+        window.addEventListener("copy", this.handleCopy);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        window.removeEventListener("resize", this.drawCanvas);
+        window.removeEventListener("copy", this.handleCopy);
     }
 }
 
