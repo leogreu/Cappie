@@ -39,7 +39,7 @@ export class AppAbout extends AppComponent {
                 <p>Phone: +49 1590 5368729<br>
                 E-mail: leonard.greulich@gmail.com</p>
                 <h2>Privacy</h2>
-                <p>The Cappie app does not collect any user data. Instead, image processing happens fully client-side. However, the hosting provider may temporarily collect the IP address of the user with the date and time of access to ensure the functionality of the website.</p>
+                <p>The Cappie app does not collect any user data. Image processing happens offline and client-side. However, the hosting provider may temporarily collect the IP address of the user with the date and time of access to ensure the functionality of the website.</p>
             </main>
         `;
     }

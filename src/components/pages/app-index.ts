@@ -87,7 +87,7 @@ export class AppIndex extends AppComponent {
                         Vibrant screenshots in seconds
                     </h1>
                     <h2>
-                        With Cappie, you can transform your screenshots into vibrant images. Without registration and super fast.
+                        Transform your screenshots into vibrant and colorful product images. Without registration and super fast.
                     </h2>
                 </app-group>
                 <a href="/home">
