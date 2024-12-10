@@ -4,7 +4,7 @@ import { debounce } from "utils/debounce.ts";
 import { all } from "persistence/controller/lit-controller.ts";
 import { ComposedImage, TransformOptions, TransformDefaults, AspectRatios } from "../../models/composed-image.ts";
 import { FileUpload } from "../../models/file-upload.ts";
-import type { RouterLocation } from "@vaadin/router";
+import { Router, type RouterLocation } from "@vaadin/router";
 
 const BackgroundImages: {
     [key: string]: {
@@ -290,9 +290,9 @@ export class AppHome extends AppComponent {
     private async handleFileInput({ detail }: CustomEvent<Base64File>) {
         const { name, mimeType, size, data } = detail;
         const file = await new FileUpload("screenshot", name, mimeType, size, data).commit();
+        const composition = await new ComposedImage(file.reference, Object.keys(BackgroundImages)[0]).commit();
 
-        this.composition = new ComposedImage(file.reference, Object.keys(BackgroundImages)[0]);
-        this.commit();
+        Router.go(`/home/${composition.uuid}`);
     }
 
     private handleResetClick() {
@@ -411,7 +411,7 @@ export class AppHome extends AppComponent {
         this.composition.commit();
     }, 1000);
 
-    async onBeforeEnter(location: RouterLocation) { 
+    async onBeforeEnter(location: RouterLocation) {
         this.composition = await ComposedImage.where({ uuid: location.params.uuid as string }).first();
     }
 
