@@ -6,13 +6,8 @@ Transform your screenshots into vibrant and colorful product images. Registratio
 
 These two images show the Cappie user interface – and were produced with Cappie.
 
-<div align="center">
-    <img src="./public/demos/1.jpg" width="500">
-</div>
-
-<div align="center">
-    <img src="./public/demos/2.jpg" width="500">
-</div>
+![Screenshot 1](./public/demos/1.jpg)
+![Screenshot 2](./public/demos/2.jpg)
 
 ## Development
 
