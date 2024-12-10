@@ -111,7 +111,7 @@ export class AppIndex extends AppComponent {
                         Vibrant screenshots in seconds
                     </h1>
                     <h2>
-                        Transform your screenshots into vibrant and colorful product images. Without registration and super fast.
+                        Transform your screenshots into vibrant and colorful product images. Registration-free, local-first, and super-fast.
                     </h2>
                 </app-group>
                 <a href="/home">
