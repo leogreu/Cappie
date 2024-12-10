@@ -10,6 +10,7 @@ export class ImageButton extends AppComponent {
 
     static styles = css`
         :host {
+            display: block;
             position: relative;
         }
 
@@ -68,6 +69,7 @@ export class ImageButton extends AppComponent {
     }
 
     private handleDeleteClick(event: MouseEvent) {
+        event.preventDefault();
         event.stopPropagation();
         this.emit("delete-image", this.id);
     }

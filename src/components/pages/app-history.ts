@@ -44,14 +44,15 @@ export class AppHistory extends AppComponent {
                     ? html`
                         <app-group direction="grid" gap="large">
                             ${this.compositions.map(composition => html`
-                                <image-button
-                                    id=${composition.uuid}
-                                    deletable
-                                    @click=${this.handleImageClick}
-                                    @delete-image=${this.handleDeleteImage}
-                                >
-                                    <img src=${composition.preview ?? String()}>
-                                </image-button>
+                                <a href="/home/${composition.uuid}">
+                                    <image-button
+                                        id=${composition.uuid}
+                                        deletable
+                                        @delete-image=${this.handleDeleteImage}
+                                    >
+                                        <img src=${composition.preview ?? String()}>
+                                    </image-button>
+                                </a>
                             `)}
                             <div></div>
                             <div></div>
@@ -76,11 +77,6 @@ export class AppHistory extends AppComponent {
                 }
             }
         });
-    }
-
-    private handleImageClick({ target }: MouseEvent) {
-        const { id } = target as HTMLElement;
-        location.href = `/home/${id}`;
     }
 
     private handleDeleteImage({ detail }: CustomEvent<string>) {

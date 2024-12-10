@@ -170,10 +170,12 @@ export class AppHome extends AppComponent {
                             <app-icon name="arrow-down-to-line-regular"></app-icon>
                             <app-text>Download</app-text>
                         </app-button>
-                        <app-button size="small" fullwidth light @click=${this.handleRemoveClick}>
-                            <app-icon name="trash-regular"></app-icon>
-                            <app-text>Remove</app-text>
-                        </app-button>
+                        <a href="/home" style="width: 100%;">
+                            <app-button size="small" fullwidth light>
+                                <app-icon name="plus-regular"></app-icon>
+                                <app-text>New</app-text>
+                            </app-button>
+                        </a>
                     </app-group>
                 </app-card>
             </aside>
@@ -183,6 +185,8 @@ export class AppHome extends AppComponent {
     updated(properties: Map<string, unknown>) {
         if (properties.has("composition")) {
             this.loadForegroundImage();
+            this.loadBackgroundImage();
+        } else if (properties.has("backgrounds")) {
             this.loadBackgroundImage();
         }
     }
@@ -301,14 +305,12 @@ export class AppHome extends AppComponent {
     }
 
     private async handleBackgroundClick({ target }: MouseEvent) {
-        if (!this.composition) return;
-
         const { id } = target as HTMLElement;
         if (id === "new") {
             const { name, mimeType, size, data } = await uploadFile("base64Binary");
             const image = await new FileUpload("background", name, mimeType, size, data).commit();
-            this.composition.background = image.uuid;
-        } else if (id) {
+            if (this.composition) this.composition.background = image.uuid;
+        } else if (id && this.composition) {
             this.composition.background = id;
         }
 
@@ -358,10 +360,6 @@ export class AppHome extends AppComponent {
     private handleDownloadClick() {
         const url = this.get("canvas").toDataURL("image/jpeg", 0.9);
         downloadObjectURL(url, "Cappie-Export");
-    }
-
-    private handleRemoveClick() {
-        this.composition = undefined;
     }
 
     private loadBackgroundImage() {
