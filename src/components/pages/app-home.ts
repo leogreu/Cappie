@@ -30,7 +30,7 @@ export class AppHome extends AppComponent {
     error?: "safari-canvas-filters";
 
     @all(FileUpload.where({ type: "background" }).sort("createdDate").asc())
-    backgrounds: FileUpload[] = [];
+    backgrounds?: FileUpload[];
 
     // Keep references for performance reasons
     backgroundImage?: HTMLImageElement;
@@ -111,7 +111,7 @@ export class AppHome extends AppComponent {
                                         <img src=${value.previewPath}>
                                     </image-button>
                                 `)}
-                                ${this.backgrounds.map(image => html`
+                                ${this.backgrounds?.map(image => html`
                                     <image-button
                                         id=${image.uuid}
                                         ?checked=${image.uuid === this.composition?.background}
@@ -322,7 +322,7 @@ export class AppHome extends AppComponent {
             text: "Do you really want to delete the image?",
             actions: {
                 Delete: () => {
-                    this.backgrounds.find(image => image.uuid === detail)?.delete();
+                    this.backgrounds?.find(image => image.uuid === detail)?.delete();
                     if (this.composition?.background === detail) {
                         this.composition.background = Object.keys(BackgroundImages)[0];
                         this.updateAndCommit();
@@ -375,7 +375,7 @@ export class AppHome extends AppComponent {
         if (!this.composition) return;
 
         const src = BackgroundImages[this.composition.background]?.path
-            ?? this.backgrounds.find(image => image.uuid === this.composition?.background)?.dataURL;
+            ?? this.backgrounds?.find(image => image.uuid === this.composition?.background)?.dataURL;
         if (!src) return;
 
         const image = new Image();
@@ -416,11 +416,16 @@ export class AppHome extends AppComponent {
     }
 
     updated(properties: Map<string, unknown>) {
-        if (properties.has("composition")) {
+        if (
+            ["composition", "backgrounds"].some(key => properties.has(key))
+            && this.composition && this.backgrounds
+        ) {
             this.loadForegroundImage();
             this.loadBackgroundImage();
-        } else if (properties.has("backgrounds")) {
-            this.loadBackgroundImage();
+
+            if (!this.composition.preview) {
+                this.commit();
+            }
         }
     }
 
