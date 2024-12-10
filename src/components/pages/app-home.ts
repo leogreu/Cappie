@@ -26,6 +26,9 @@ export class AppHome extends AppComponent {
     @state()
     composition?: ComposedImage;
 
+    @state()
+    error?: "safari-canvas-filters";
+
     @all(FileUpload.where({ type: "background" }).sort("createdDate").asc())
     backgrounds: FileUpload[] = [];
 
@@ -151,6 +154,12 @@ export class AppHome extends AppComponent {
                                 `)}
                             </app-group>
                         </app-group>
+                        ${this.error && html`
+                            <app-notification type="danger">
+                                <app-text slot="title">Safari without Canvas Filters</app-text>
+                                <app-text slot="text">Safari is currently the only browser without enabled Canvas Filters by default. To enable it, click on 'Safari' in the top left menu bar, then 'Settings', 'Feature Flags', search for 'Canvas' and enable 'Canvas Filters'. Then, please reload the page.</app-text>
+                            </app-notification>
+                        `}
                         ${Object.entries(TransformOptions).map(([key, value]) => html`
                             <app-slider
                                 name=${key}
@@ -273,6 +282,8 @@ export class AppHome extends AppComponent {
 
             ctx.restore();
         }
+
+        this.error = ctx.filter === "none" ? undefined : "safari-canvas-filters";
     }
 
     private roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
