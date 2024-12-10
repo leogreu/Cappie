@@ -21,6 +21,12 @@ export class AppSidebar extends AppComponent {
         a:nth-child(4) {
             margin-top: auto;
         }
+
+        @media only screen and (max-width: ${AppComponent.breakpoints.phone}px) {
+            :host {
+                display: none;
+            }
+        }
     `;
 
     render() {

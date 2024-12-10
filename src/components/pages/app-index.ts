@@ -35,7 +35,7 @@ export class AppIndex extends AppComponent {
             border-radius: var(--radius-full);
         }
 
-        h1, h2 {
+        h1, h2, p {
             margin: 0;
             color: white;
             filter: drop-shadow(0 1px 1px rgb(var(--gray-5)));
@@ -51,6 +51,10 @@ export class AppIndex extends AppComponent {
             font-size: var(--text-xl);
             font-weight: var(--text-normal);
             line-height: var(--leading-normal);
+        }
+
+        p {
+            font-size: var(--text-sm);
         }
 
         app-button {
@@ -72,11 +76,17 @@ export class AppIndex extends AppComponent {
                 filter: blur(25px) brightness(.75);
             }
         }
+
+        @media only screen and (min-width: ${AppComponent.breakpoints.phone}px) {
+            p {
+                display: none;
+            }
+        }
     `;
 
     render() {
         return html`
-            <img src="/backgrounds/2.jpg">
+            <img src="/backgrounds/2_small.jpg">
             <app-group direction="column" gap="huge" centered>
                 <app-group class="badge" centered>
                     <img src="/favicon.svg" width="16">
@@ -95,6 +105,9 @@ export class AppIndex extends AppComponent {
                         Create your image
                     </app-button>
                 </a>
+                <p>
+                    — We recommend using a desktop device —
+                </p>
             </app-group>
         `;
     }
