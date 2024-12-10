@@ -55,7 +55,7 @@ export class AppIndex extends AppComponent {
         }
 
         p {
-            font-size: var(--text-sm);
+            display: none;
         }
 
         app-button {
@@ -78,9 +78,22 @@ export class AppIndex extends AppComponent {
             }
         }
 
-        @media only screen and (min-width: ${AppComponent.breakpoints.phone}px) {
+        @media only screen and (max-width: ${AppComponent.breakpoints.phone}px) {
+            h1 {
+                font-size: var(--text-3xl);
+            }
+
+            h2 {
+                font-size: var(--text-xl);
+            }
+            
             p {
-                display: none;
+                display: block;
+                font-size: var(--text-sm);
+            }
+
+            :host > img {
+                scale: 1.5;
             }
         }
     `;
