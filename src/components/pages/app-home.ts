@@ -2,53 +2,9 @@ import { AppComponent, customElement, state, css, html } from "components/base/a
 import { downloadObjectURL, uploadFile, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
 import { all } from "persistence/controller/lit-controller.ts";
+import { ComposedImage, TransformOptions, TransformDefaults, AspectRatios } from "../../models/composed-image.ts";
 import { FileUpload } from "../../models/file-upload.ts";
 import type { RouterLocation } from "@vaadin/router";
-
-const TransformOptions: {
-    [key: string]: {
-        name: string;
-        min: number;
-        max: number;
-        step: number;
-    };
-} = {
-    blur: {
-        name: "Blur",
-        min: 0,
-        max: 20,
-        step: 1
-    },
-    scale: {
-        name: "Scale",
-        min: 0,
-        max: 1,
-        step: 0.01
-    },
-    radius: {
-        name: "Radius",
-        min: 0,
-        max: 50,
-        step: 1
-    },
-    shadow: {
-        name: "Shadow",
-        min: 0,
-        max: 25,
-        step: 1
-    }
-};
-
-const TransformDefaults: {
-    [key in keyof typeof TransformOptions]: number;
-} = {
-    blur: 10,
-    scale: 0.75,
-    radius: 15,
-    shadow: 15
-};
-
-const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
 
 const BackgroundImages: {
     [key: string]: {
@@ -68,28 +24,14 @@ const BackgroundImages: {
 @customElement("app-home")
 export class AppHome extends AppComponent {
     @state()
-    background = Object.keys(BackgroundImages)[0];
-
-    @state()
-    ratio = AspectRatios[0];
-
-    @state()
-    portrait = false;
-
-    @state()
-    transforms = { ...TransformDefaults };
-
-    @state()
-    file?: FileUpload;
-
-    @state()
-    backgroundImage?: HTMLImageElement;
-
-    @state()
-    foregroundImage?: HTMLImageElement;
+    composition?: ComposedImage;
 
     @all(FileUpload.where({ type: "background" }).sort("createdDate").asc())
-    userImages: FileUpload[] = [];
+    backgrounds: FileUpload[] = [];
+
+    // Keep references for performance reasons
+    backgroundImage?: HTMLImageElement;
+    foregroundImage?: HTMLImageElement;
 
     static styles = css`
         :host {
@@ -133,7 +75,7 @@ export class AppHome extends AppComponent {
     render() {
         return html`
             <main>
-                ${this.file
+                ${this.composition
                     ? html`<canvas></canvas>`
                     : html`
                         <file-dropzone type="base64Binary" @file-input=${this.handleFileInput}>
@@ -159,18 +101,21 @@ export class AppHome extends AppComponent {
                             </app-paragraph>
                             <app-group direction="grid" @click=${this.handleBackgroundClick}>
                                 ${Object.entries(BackgroundImages).map(([key, value]) => html`
-                                    <image-button id=${key} ?checked=${key === this.background}>
+                                    <image-button
+                                        id=${key}
+                                        ?checked=${key === this.composition?.background}
+                                    >
                                         <img src=${value.previewPath}>
                                     </image-button>
                                 `)}
-                                ${this.userImages.map(file => html`
+                                ${this.backgrounds.map(image => html`
                                     <image-button
-                                        id=${file.uuid}
-                                        ?checked=${file.uuid === this.background}
+                                        id=${image.uuid}
+                                        ?checked=${image.uuid === this.composition?.background}
                                         deletable
                                         @delete-image=${this.handleDeleteImage}
                                     >
-                                        <img src=${file.dataURL}>
+                                        <img src=${image.dataURL}>
                                     </image-button>
                                 `)}
                                 <app-button id="new" fullwidth style="aspect-ratio: 16 / 9;">
@@ -187,7 +132,7 @@ export class AppHome extends AppComponent {
                                     name="rectangle-regular"
                                     size="small"
                                     style="
-                                        rotate: ${this.portrait? '90' : '0'}deg;
+                                        rotate: ${this.composition?.portrait? '90' : '0'}deg;
                                         transition: rotate var(--duration-long);
                                     "
                                     @click=${this.handlePortraitClick}
@@ -198,7 +143,7 @@ export class AppHome extends AppComponent {
                                     <app-button
                                         id=${ratio}
                                         size="small"
-                                        ?checked=${ratio === this.ratio}
+                                        ?checked=${ratio === this.composition?.ratio}
                                         fullwidth
                                     >
                                         ${ratio ? ratio.replace(" / ", ":") : "Responsive"}
@@ -213,7 +158,7 @@ export class AppHome extends AppComponent {
                                 min=${value.min}
                                 max=${value.max}
                                 step=${value.step}
-                                value=${this.transforms[key]}
+                                value=${this.composition?.transforms[key] ?? TransformDefaults[key]}
                                 @input=${this.handleNumericInput}
                             >
                                 ${value.name}
@@ -236,12 +181,10 @@ export class AppHome extends AppComponent {
     }
 
     updated(properties: Map<string, unknown>) {
-        if (properties.has("file") || properties.has("background")) {
-            if (properties.has("file")) this.loadForegroundImage();
+        if (properties.has("composition")) {
+            this.loadForegroundImage();
             this.loadBackgroundImage();
         }
-
-        this.drawCanvas();
     }
 
     firstUpdated() {
@@ -251,15 +194,15 @@ export class AppHome extends AppComponent {
     private async drawCanvas() {
         const canvas = this.find("canvas");
         const ctx = canvas?.getContext("2d");
-        if (!canvas || !ctx) return;
+        if (!this.composition || !canvas || !ctx) return;
 
         // Determine canvas dimensions
         let width = canvas.parentElement?.clientWidth || 800;
         let height = canvas.parentElement?.clientHeight || 600;
 
-        if (this.ratio) {
-            const numbers = this.ratio.split("/").map(Number);
-            if (this.portrait) numbers.reverse();
+        if (this.composition.ratio) {
+            const numbers = this.composition.ratio.split("/").map(Number);
+            if (this.composition.portrait) numbers.reverse();
 
             const [w, h] = numbers;
             if (w && h) {
@@ -295,7 +238,7 @@ export class AppHome extends AppComponent {
             const dy = (height - drawHeight) / 2;
 
             ctx.save();
-            ctx.filter = `blur(${this.transforms.blur}px)`;
+            ctx.filter = `blur(${this.composition.transforms.blur}px)`;
             ctx.drawImage(this.backgroundImage, dx, dy, drawWidth, drawHeight);
             ctx.restore();
         }
@@ -306,18 +249,18 @@ export class AppHome extends AppComponent {
             const imgRatio = img.width / img.height;
 
             // Calculate scaled dimensions while preserving aspect ratio
-            const drawHeight = Math.min(height, (width / imgRatio)) * this.transforms.scale;
+            const drawHeight = Math.min(height, (width / imgRatio)) * this.composition.transforms.scale;
             const drawWidth = drawHeight * imgRatio;
 
             ctx.save();
             ctx.translate(width / 2, height / 2);
 
             // Draw rounded rectangle with shadow and clipping
-            this.roundRect(ctx, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight, this.transforms.radius);
+            this.roundRect(ctx, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight, this.composition.transforms.radius);
 
             ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-            ctx.shadowBlur = this.transforms.shadow * 2;
-            ctx.shadowOffsetY = this.transforms.shadow;
+            ctx.shadowBlur = this.composition.transforms.shadow * 2;
+            ctx.shadowOffsetY = this.composition.transforms.shadow;
             ctx.fillStyle = "white";
 
             ctx.fill();
@@ -344,22 +287,33 @@ export class AppHome extends AppComponent {
 
     private async handleFileInput({ detail }: CustomEvent<Base64File>) {
         const { name, mimeType, size, data } = detail;
-        this.file = await new FileUpload("screenshot", name, mimeType, size, data).commit();
+        const file = await new FileUpload("screenshot", name, mimeType, size, data).commit();
+
+        this.composition = new ComposedImage(file.reference, Object.keys(BackgroundImages)[0]);
+        this.commit();
     }
 
     private handleResetClick() {
-        this.transforms = { ...TransformDefaults };
+        if (!this.composition) return;
+
+        this.composition.transforms = { ...TransformDefaults };
+        this.updateAndCommit();
     }
 
     private async handleBackgroundClick({ target }: MouseEvent) {
+        if (!this.composition) return;
+
         const { id } = target as HTMLElement;
         if (id === "new") {
             const { name, mimeType, size, data } = await uploadFile("base64Binary");
             const image = await new FileUpload("background", name, mimeType, size, data).commit();
-            this.background = image.uuid;
+            this.composition.background = image.uuid;
         } else if (id) {
-            this.background = id;
+            this.composition.background = id;
         }
+
+        this.loadBackgroundImage();
+        this.updateAndCommit();
     }
 
     private handleDeleteImage({ detail }: CustomEvent<string>) {
@@ -368,9 +322,10 @@ export class AppHome extends AppComponent {
             text: "Do you really want to delete the image?",
             actions: {
                 Delete: () => {
-                    this.userImages.find(image => image.uuid === detail)?.delete();
-                    if (this.background === detail) {
-                        this.background = Object.keys(BackgroundImages)[0];
+                    this.backgrounds.find(image => image.uuid === detail)?.delete();
+                    if (this.composition?.background === detail) {
+                        this.composition.background = Object.keys(BackgroundImages)[0];
+                        this.updateAndCommit();
                     }
                 }
             }
@@ -378,20 +333,26 @@ export class AppHome extends AppComponent {
     }
 
     private handleRatioClick({ target }: MouseEvent) {
+        if (!this.composition) return;
+
         const { id } = target as HTMLElement;
-        this.ratio = id;
+        this.composition.ratio = id;
+        this.updateAndCommit();
     }
 
     private handlePortraitClick() {
-        this.portrait = !this.portrait;
+        if (!this.composition) return;
+
+        this.composition.portrait = !this.composition.portrait;
+        this.updateAndCommit();
     }
 
     private handleNumericInput({ target }: InputEvent) {
+        if (!this.composition) return;
+
         const { name, value } = target as HTMLInputElement;
-        this.transforms = {
-            ...this.transforms,
-            [name]: Number(value)
-        };
+        this.composition.transforms[name] = Number(value);
+        this.updateAndCommit();
     }
 
     private handleDownloadClick() {
@@ -400,29 +361,51 @@ export class AppHome extends AppComponent {
     }
 
     private handleRemoveClick() {
-        this.file = undefined;
+        this.composition = undefined;
     }
 
     private loadBackgroundImage() {
-        const src = BackgroundImages[this.background]?.path
-            ?? this.userImages.find(image => image.uuid === this.background)?.dataURL;
+        if (!this.composition) return;
+
+        const src = BackgroundImages[this.composition.background]?.path
+            ?? this.backgrounds.find(image => image.uuid === this.composition?.background)?.dataURL;
         if (!src) return;
 
         const image = new Image();
         image.src = src;
-        image.onload = () => this.backgroundImage = image;
+        image.onload = () => {
+            this.backgroundImage = image;
+            this.drawCanvas();
+        }
     }
 
-    private loadForegroundImage() {
-        if (!this.file) return;
+    private async loadForegroundImage() {
+        if (!this.composition) return;
 
+        const file = await this.composition.image.data;
         const image = new Image();
-        image.src = this.file.dataURL;
-        image.onload = () => this.foregroundImage = image;
+        image.src = file.dataURL;
+        image.onload = () => {
+            this.foregroundImage = image;
+            this.drawCanvas();
+        }
     }
+
+    private async updateAndCommit() {
+        this.requestUpdate();
+        this.drawCanvas();
+        this.commit();
+    }
+
+    private commit = debounce(() => {
+        if (!this.composition) return;
+        // TODO: Reduce size
+        this.composition.preview = this.get("canvas").toDataURL("image/jpeg", 0.8);
+        this.composition.commit();
+    }, 1000);
 
     async onBeforeEnter(location: RouterLocation) { 
-        this.file = await FileUpload.where({ uuid: location.params.uuid as string }).first();
+        this.composition = await ComposedImage.where({ uuid: location.params.uuid as string }).first();
     }
 }
 
