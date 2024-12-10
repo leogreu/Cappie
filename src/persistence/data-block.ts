@@ -306,7 +306,7 @@ export class DataBlock {
             const value = Reflect.get(this, field);
             if (this.static.fields[field].relation) {
                 if (Array.isArray(value) && value.every(entry => entry instanceof DataBlock)) {
-                    Reflect.set(clone, field, value.map(entry => entry.clone(options)));
+                    Reflect.set(clone, field, value.map((entry: DataBlock) => entry.clone(options)));
                 } else if (value instanceof DataBlock) {
                     Reflect.set(clone, field, value.clone(options));
                 }
