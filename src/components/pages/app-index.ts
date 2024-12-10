@@ -23,6 +23,7 @@ export class AppIndex extends AppComponent {
         img + app-group {
             position: absolute;
             max-width: 42rem;
+            padding: var(--size-4);
             text-align: center;
         }
 
