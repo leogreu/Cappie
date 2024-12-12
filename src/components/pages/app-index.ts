@@ -104,7 +104,7 @@ export class AppIndex extends AppComponent {
             <app-group direction="column" gap="huge" centered>
                 <app-group class="badge" centered>
                     <img src="/favicon.svg" width="16">
-                    Cappie
+                    Cappie Studio
                 </app-group>
                 <app-group direction="column">
                     <h1>
