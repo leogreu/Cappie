@@ -385,14 +385,14 @@ export class AppHome extends AppComponent {
                 });
 
                 if (response.ok) {
-                    await navigator.clipboard.writeText(`${VITE_SUPABASE_URL}/storage/v1/object/public/images/${file.name}`);
+                    await navigator.clipboard.writeText(`${location.origin}/images/${file.name}`);
                 }
 
                 document.createElement("app-notification").show({
                     title: response.ok ? "Success" : "Error",
                     text: response.ok
                         ? "The image URL was successfully uploaded copied to your clipboard."
-                        : "Unfortunately, an unexpected error occured. If the error persists, please raise an issue at GitHub or contact us via the about page in the top left corner"
+                        : "Unfortunately, an unexpected error occured. If the error persists, please open an issue at GitHub or contact us via the about page."
                 });
                 break;
             case "download-image":
