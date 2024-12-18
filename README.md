@@ -1,10 +1,10 @@
 # Cappie
 
-Transform your screenshots into vibrant and colorful product images. Registration-free, local-first, and super-fast.
+Transform your screenshots into vibrant and colorful product images. For social media, blog posts, changelogs, team communication, and more. Registration-free, local-first, and super-fast.
 
 ## Screenshots
 
-These two images show the Cappie user interface – and were produced with Cappie.
+These two images show the Cappie UI – and were made with Cappie.
 
 ![Screenshot 1](./public/demos/1.jpg)
 ![Screenshot 2](./public/demos/2.jpg)
