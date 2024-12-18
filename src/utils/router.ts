@@ -26,9 +26,9 @@ export const routes: {
     }
 ];
 
-export const init = () => {
+export const init = async () => {
     const sidebar = document.querySelector("app-sidebar");
-    new Router(document.body).setRoutes(
+    await new Router(document.body).setRoutes(
         routes.map(route => ({
             ...route,
             action: () => {
