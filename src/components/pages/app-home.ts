@@ -175,10 +175,22 @@ export class AppHome extends AppComponent {
                         `)}
                     </app-group>
                     <app-group slot="footer">
-                        <app-button size="small" fullwidth @click=${this.handleDownloadClick}>
-                            <app-icon name="arrow-down-to-line-regular"></app-icon>
-                            <app-text>Download</app-text>
-                        </app-button>
+                        <app-dropdown horizontal="left" vertical="top" fullwidth>
+                            <app-button slot="trigger" size="small" fullwidth>
+                                <app-icon name="arrow-down-to-line-regular"></app-icon>
+                                <app-text>Export</app-text>
+                            </app-button>
+                            <app-menu slot="content" @item-click=${this.handleExportClick}>
+                                <menu-item value="copy-url">
+                                    <app-icon name="cloud-regular"></app-icon>
+                                    <app-text>Copy URL</app-text>
+                                </menu-item>
+                                <menu-item value="download-image">
+                                    <app-icon name="arrow-down-to-line-regular"></app-icon>
+                                    <app-text>Download image</app-text>
+                                </menu-item>
+                            </app-menu>
+                        </app-dropdown>
                         <a href="/home" style="width: 100%;">
                             <app-button size="small" fullwidth light>
                                 <app-icon name="plus-regular"></app-icon>
@@ -355,9 +367,38 @@ export class AppHome extends AppComponent {
         this.updateAndCommit();
     }
 
-    private handleDownloadClick() {
-        const url = this.get("canvas").toDataURL("image/jpeg", 0.9);
-        downloadObjectURL(url, `cappie-${new Date().getTime()}`);
+    private async handleExportClick({ detail }: CustomEvent<string>) {
+        const dataURL = this.get("canvas").toDataURL("image/jpeg", 0.9);
+
+        switch (detail) {
+            case "copy-url":
+                const blob = await fetch(dataURL).then(image => image.blob());
+                const file = new File([blob], `${crypto.randomUUID()}.jpg`, { type: blob.type });
+
+                const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = import.meta.env;
+                const response = await fetch(`${VITE_SUPABASE_URL}/storage/v1/object/images/${file.name}`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${VITE_SUPABASE_ANON_KEY}`,
+                    },
+                    body: file,
+                });
+
+                if (response.ok) {
+                    await navigator.clipboard.writeText(`${VITE_SUPABASE_URL}/storage/v1/object/public/images/${file.name}`);
+                }
+
+                document.createElement("app-notification").show({
+                    title: response.ok ? "Success" : "Error",
+                    text: response.ok
+                        ? "The image URL was successfully uploaded copied to your clipboard."
+                        : "Unfortunately, an unexpected error occured. If the error persists, please raise an issue at GitHub or contact us via the about page in the top left corner"
+                });
+                break;
+            case "download-image":
+                downloadObjectURL(dataURL, `cappie-${new Date().getTime()}.jpg`);
+                break;
+        }
     }
 
     private handleCopy = async () => {

@@ -40,6 +40,7 @@ export class AppAbout extends AppComponent {
                 E-mail: leonard.greulich@gmail.com</p>
                 <h2>Privacy</h2>
                 <p>The Cappie app does not collect any user data. Image processing happens offline and client-side. However, the hosting provider may temporarily collect the IP address of the user with the date and time of access to ensure the functionality of the website.</p>
+                <p>Users can optionally upload images to one of our servers to share and embed them via links. By default, these images are stored infinitely, but can be removed upon request.</p>
             </main>
         `;
     }
