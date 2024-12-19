@@ -183,7 +183,11 @@ export class AppHome extends AppComponent {
                             <app-menu slot="content" @item-click=${this.handleExportClick}>
                                 <menu-item value="copy-url">
                                     <app-icon name="cloud-regular"></app-icon>
-                                    <app-text>Copy URL</app-text>
+                                    <app-text>Upload image and copy link</app-text>
+                                </menu-item>
+                                <menu-item value="copy-image">
+                                    <app-icon name="copy-regular"></app-icon>
+                                    <app-text>Copy image to clipboard</app-text>
                                 </menu-item>
                                 <menu-item value="download-image">
                                     <app-icon name="arrow-down-to-line-regular"></app-icon>
@@ -391,8 +395,16 @@ export class AppHome extends AppComponent {
                 document.createElement("app-notification").show({
                     title: response.ok ? "Success" : "Error",
                     text: response.ok
-                        ? "The image URL was successfully uploaded copied to your clipboard."
-                        : "Unfortunately, an unexpected error occured. If the error persists, please open an issue at GitHub or contact us via the about page."
+                        ? "The image was successfully uploaded and the link copied to your clipboard."
+                        : "Unfortunately, an unexpected error occured. If the error persists, please open an issue at GitHub or contact us via the about page.",
+                    type: response.ok ? "primary" : "danger"
+                });
+                break;
+            case "copy-image":
+                await this.handleCopy();
+                document.createElement("app-notification").show({
+                    title: "Success",
+                    text: "The image was successfully copied to your clipboard."
                 });
                 break;
             case "download-image":

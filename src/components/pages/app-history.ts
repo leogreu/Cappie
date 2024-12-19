@@ -60,7 +60,7 @@ export class AppHistory extends AppComponent {
                         </app-group>
                     `
                     : html`
-                        <app-paragraph>No images uploaded yet.</app-paragraph>
+                        <app-paragraph>No images added yet.</app-paragraph>
                     `
                 }
             </app-group>
