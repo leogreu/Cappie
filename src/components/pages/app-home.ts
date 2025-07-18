@@ -234,7 +234,7 @@ export class AppHome extends AppComponent {
         }
 
         // Set canvas resolution with device pixel ratio
-        const dpr = window.devicePixelRatio || 1;
+        const dpr = Math.max(window.devicePixelRatio, 2);
         canvas.width = Math.floor(width * dpr);
         canvas.height = Math.floor(height * dpr);
         canvas.style.width = `${width}px`;
