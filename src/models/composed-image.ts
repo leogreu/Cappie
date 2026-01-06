@@ -44,6 +44,12 @@ export const TransformOptions: {
         min: 0,
         max: 15,
         step: 1
+    },
+    elevate: {
+        name: "Elevation",
+        min: -15,
+        max: 15,
+        step: 1
     }
 };
 
@@ -55,7 +61,8 @@ export const TransformDefaults: {
     radius: 15,
     shadow: 15,
     spacing: 1,
-    rotate: 0
+    rotate: 0,
+    offset: 0
 };
 
 export const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];

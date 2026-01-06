@@ -291,7 +291,7 @@ export class AppHome extends AppComponent {
 
         // Draw foreground if available
         if (this.foregroundImages.length > 0) {
-            const { spacing, radius, shadow, scale, rotate } = this.composition.transforms;
+            const { spacing, radius, shadow, scale, rotate, elevate } = this.composition.transforms;
             const totalImages = this.foregroundImages.length;
             const availableWidth = width * scale;
             const availableHeight = height * scale;
@@ -323,13 +323,19 @@ export class AppHome extends AppComponent {
             this.foregroundImages.forEach((img, index) => {
                 const xCenterFullSpread = startXFullSpread + widthWhenSpread / 2 + (index * (widthWhenSpread + maxGap));
                 const xCenter = xCenterFullSpread * spacing;
+                
                 // Interpolate rotation from -rotate (first) to +rotate (last)
                 const rotation = totalImages > 1 
                     ? -rotate + (2 * rotate * index) / (totalImages - 1)
                     : 0;
+
+                // Interpolate vertical offset from -offset (highest) to +offset (lowest)
+                const elevation = totalImages > 1
+                    ? (-elevate + (2 * elevate * index) / (totalImages - 1)) * (availableHeight / 100)
+                    : 0;
                 
                 ctx.save();
-                ctx.translate(xCenter, 0);
+                ctx.translate(xCenter, elevation);
                 ctx.rotate((rotation * Math.PI) / 180);
                 
                 this.roundRect(ctx, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
