@@ -76,6 +76,10 @@ export class AppHome extends AppComponent {
         [direction=grid] {
             --min-width: 5rem;
         }
+
+        [direction=grid] app-button {
+            aspect-ratio: 16 / 9;
+        }
     `;
 
     render() {
@@ -109,15 +113,16 @@ export class AppHome extends AppComponent {
                                 ${this.screenshots.map(image => html`
                                     <image-button
                                         id=${image.uuid}
-                                        deletable
+                                        shadow deletable
                                         @delete-image=${this.handleDeleteScreenshot}
                                     >
                                         <img src=${image.dataURL}>
                                     </image-button>
                                 `)}
-                                <app-button id="new-screenshot" fullwidth style="aspect-ratio: 16 / 9;">
+                                <app-button id="new-screenshot" fullwidth>
                                     <app-icon name="plus-regular"></app-icon>
                                 </app-button>
+                                <div></div>
                                 <div></div>
                                 <div></div>
                                 <div></div>
@@ -146,7 +151,7 @@ export class AppHome extends AppComponent {
                                         <img src=${image.dataURL}>
                                     </image-button>
                                 `)}
-                                <app-button id="new" fullwidth style="aspect-ratio: 16 / 9;">
+                                <app-button id="new" fullwidth>
                                     <app-icon name="plus-regular"></app-icon>
                                 </app-button>
                             </app-group>
