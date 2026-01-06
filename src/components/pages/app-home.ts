@@ -368,9 +368,16 @@ export class AppHome extends AppComponent {
     private async handleFileInput({ detail }: CustomEvent<Base64File>) {
         const { name, mimeType, size, data } = detail;
         const file = await new FileUpload("screenshot", name, mimeType, size, data).commit();
-        const composition = await new ComposedImage([file.reference], Object.keys(BackgroundImages)[0]).commit();
-
-        Router.go(`/home/${composition.uuid}`);
+        
+        if (this.composition) {
+            this.composition.images.push(file.reference);
+            this.screenshots.push(file);
+            await this.loadForegroundImages();
+            this.updateAndCommit();
+        } else {
+            const composition = await new ComposedImage([file.reference], Object.keys(BackgroundImages)[0]).commit();
+            Router.go(`/home/${composition.uuid}`);
+        }
     }
 
     private handleResetClick() {
@@ -413,14 +420,8 @@ export class AppHome extends AppComponent {
     private async handleScreenshotClick({ target }: MouseEvent) {
         const { id } = target as HTMLElement;
         if (id === "new-screenshot") {
-            const { name, mimeType, size, data } = await uploadFile("base64Binary");
-            const image = await new FileUpload("screenshot", name, mimeType, size, data).commit();
-            if (this.composition) {
-                this.composition.images.push(image.reference);
-                this.screenshots.push(image);
-                await this.loadForegroundImages();
-                this.updateAndCommit();
-            }
+            const file = await uploadFile("base64Binary");
+            this.handleFileInput({ detail: file } as CustomEvent<Base64File>);
         }
     }
 
