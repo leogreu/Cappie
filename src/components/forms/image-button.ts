@@ -3,6 +3,9 @@ import { AppComponent, customElement, property, css, html } from "components/bas
 @customElement("image-button")
 export class ImageButton extends AppComponent {
     @property({ type: Boolean })
+    shadow = false;
+
+    @property({ type: Boolean })
     checked = false;
 
     @property({ type: Boolean })
@@ -23,6 +26,11 @@ export class ImageButton extends AppComponent {
             border-radius: var(--radius-md);
             cursor: pointer;
             overflow: hidden;
+        }
+
+        :host([shadow]) button {
+            border: 1px solid var(--surface-3);
+            box-shadow: var(--shadow-md) var(--shadow);
         }
 
         :host([checked]) button, button:focus-visible {

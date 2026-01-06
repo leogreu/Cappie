@@ -7,49 +7,70 @@ export const TransformOptions: {
         min: number;
         max: number;
         step: number;
+        default: number;
+        requiresMultiple?: boolean;
     };
 } = {
     blur: {
         name: "Blur",
         min: 0,
         max: 20,
-        step: 1
+        step: 1,
+        default: 10
     },
     scale: {
         name: "Scale",
         min: 0,
         max: 1,
-        step: 0.01
+        step: 0.01,
+        default: 0.75
     },
     radius: {
         name: "Radius",
         min: 0,
         max: 50,
-        step: 1
+        step: 1,
+        default: 15
     },
     shadow: {
         name: "Shadow",
         min: 0,
         max: 25,
-        step: 1
+        step: 1,
+        default: 15
+    },
+    spacing: {
+        name: "Spacing",
+        min: 0,
+        max: 1,
+        step: 0.01,
+        default: 1,
+        requiresMultiple: true
+    },
+    rotate: {
+        name: "Rotation",
+        min: 0,
+        max: 15,
+        step: 1,
+        default: 0,
+        requiresMultiple: true
+    },
+    elevate: {
+        name: "Elevation",
+        min: -15,
+        max: 15,
+        step: 1,
+        default: 0,
+        requiresMultiple: true
     }
-};
-
-export const TransformDefaults: {
-    [key in keyof typeof TransformOptions]: number;
-} = {
-    blur: 10,
-    scale: 0.75,
-    radius: 15,
-    shadow: 15
 };
 
 export const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
 
 @block({ collection: "files", store: "composed-image" })
 export class ComposedImage extends DataBlock {
-    @field({ relation: FileUpload, lazy: true })
-    image: BlockReference<FileUpload>;
+    @field({ relation: [FileUpload], lazy: true })
+    images: BlockReference<FileUpload>[];
 
     @field()
     background: string;
@@ -61,14 +82,20 @@ export class ComposedImage extends DataBlock {
     portrait = false;
 
     @field({ type: Object })
-    transforms: Record<string, number> = { ...TransformDefaults };
+    transforms = ComposedImage.defaults;
 
     @field()
     preview?: string;
 
-    constructor(image: BlockReference<FileUpload>, background: string) {
+    constructor(images: BlockReference<FileUpload>[], background: string) {
         super();
-        this.image = image;
+        this.images = images;
         this.background = background;
+    }
+
+    static get defaults() {
+        return Object.fromEntries(
+            Object.entries(TransformOptions).map(([key, value]) => [key, value.default])
+        );
     }
 }

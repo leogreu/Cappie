@@ -2,7 +2,7 @@ import { AppComponent, customElement, state, css, html } from "components/base/a
 import { downloadObjectURL, uploadFile, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
 import { all } from "persistence/controller/lit-controller.ts";
-import { ComposedImage, TransformOptions, TransformDefaults, AspectRatios } from "../../models/composed-image.ts";
+import { ComposedImage, TransformOptions, AspectRatios } from "../../models/composed-image.ts";
 import { FileUpload } from "../../models/file-upload.ts";
 import { Router, type RouterLocation } from "@vaadin/router";
 
@@ -27,6 +27,9 @@ export class AppHome extends AppComponent {
     composition?: ComposedImage;
 
     @state()
+    screenshots: FileUpload[] = [];
+
+    @state()
     error?: "safari-canvas-filters";
 
     @all(FileUpload.where({ type: "background" }).sort("createdDate").asc())
@@ -34,7 +37,7 @@ export class AppHome extends AppComponent {
 
     // Keep references for performance reasons
     backgroundImage?: HTMLImageElement;
-    foregroundImage?: HTMLImageElement;
+    foregroundImages: HTMLImageElement[] = [];
 
     static styles = css`
         :host {
@@ -73,6 +76,10 @@ export class AppHome extends AppComponent {
         [direction=grid] {
             --min-width: 5rem;
         }
+
+        [direction=grid] app-button {
+            aspect-ratio: 16 / 9;
+        }
     `;
 
     render() {
@@ -100,6 +107,26 @@ export class AppHome extends AppComponent {
                     <app-group direction="column" gap="huge">
                         <app-group direction="column">
                             <app-paragraph bold>
+                                Screenshots
+                            </app-paragraph>
+                            <app-group direction="grid">
+                                ${this.screenshots.map(image => html`
+                                    <image-button
+                                        id=${image.uuid}
+                                        shadow deletable
+                                        @delete-image=${this.handleDeleteScreenshot}
+                                    >
+                                        <img src=${image.dataURL}>
+                                    </image-button>
+                                `)}
+                                <app-button fullwidth @click=${this.handleScreenshotClick}>
+                                    <app-icon name="plus-regular"></app-icon>
+                                </app-button>
+                                ${Array.from({ length: 4 }).map(() => html`<div></div>`)}
+                            </app-group>
+                        </app-group>
+                        <app-group direction="column">
+                            <app-paragraph bold>
                                 Background
                             </app-paragraph>
                             <app-group direction="grid" @click=${this.handleBackgroundClick}>
@@ -121,7 +148,7 @@ export class AppHome extends AppComponent {
                                         <img src=${image.dataURL}>
                                     </image-button>
                                 `)}
-                                <app-button id="new" fullwidth style="aspect-ratio: 16 / 9;">
+                                <app-button id="new" fullwidth>
                                     <app-icon name="plus-regular"></app-icon>
                                 </app-button>
                             </app-group>
@@ -156,23 +183,30 @@ export class AppHome extends AppComponent {
                         </app-group>
                         ${this.error && html`
                             <app-notification type="danger">
-                                <app-text slot="title">Safari without Canvas Filters</app-text>
-                                <app-text slot="text">Safari is currently the only browser without enabled Canvas Filters by default. To enable it, click on 'Safari' in the top left menu bar, then 'Settings', 'Feature Flags', search for 'Canvas' and enable 'Canvas Filters'. Then, please reload the page.</app-text>
+                                <app-text slot="title">
+                                    Safari without Canvas Filters
+                                </app-text>
+                                <app-text slot="text">
+                                    Safari is currently the only browser without enabled Canvas Filters by default. To enable it, click on 'Safari' in the top left menu bar, then 'Settings', 'Feature Flags', search for 'Canvas' and enable 'Canvas Filters'. Then, please reload the page.
+                                </app-text>
                             </app-notification>
                         `}
-                        ${Object.entries(TransformOptions).map(([key, value]) => html`
-                            <app-slider
-                                name=${key}
-                                type="range"
-                                min=${value.min}
-                                max=${value.max}
-                                step=${value.step}
-                                value=${this.composition?.transforms[key] ?? TransformDefaults[key]}
-                                @input=${this.handleNumericInput}
-                            >
-                                ${value.name}
-                            </app-slider>
-                        `)}
+                        ${Object.entries(TransformOptions)
+                            .filter(([_, value]) => !value.requiresMultiple || this.screenshots.length > 1)
+                            .map(([key, value]) => html`
+                                <app-slider
+                                    name=${key}
+                                    type="range"
+                                    min=${value.min}
+                                    max=${value.max}
+                                    step=${value.step}
+                                    value=${this.composition?.transforms[key] ?? value.default}
+                                    @input=${this.handleNumericInput}
+                                >
+                                    ${value.name}
+                                </app-slider>
+                            `)
+                        }
                     </app-group>
                     <app-group slot="footer">
                         <app-dropdown horizontal="left" vertical="top" fullwidth>
@@ -260,28 +294,69 @@ export class AppHome extends AppComponent {
         }
 
         // Draw foreground if available
-        if (this.foregroundImage) {
-            const img = this.foregroundImage;
-            const imgRatio = img.width / img.height;
+        if (this.foregroundImages.length > 0) {
+            const { spacing, radius, shadow, scale, rotate, elevate } = this.composition.transforms;
+            const totalImages = this.foregroundImages.length;
+            const availableWidth = width * scale;
+            const availableHeight = height * scale;
+            const maxGap = 20;
+            const fullGap = (totalImages - 1) * maxGap;
 
-            // Calculate scaled dimensions while preserving aspect ratio
-            const drawHeight = Math.min(height, (width / imgRatio)) * this.composition.transforms.scale;
-            const drawWidth = drawHeight * imgRatio;
+            // Calculate image dimensions based on first image's aspect ratio
+            const imgRatio = this.foregroundImages[0].width / this.foregroundImages[0].height;
+            const widthWhenSpread = (availableWidth - fullGap) / totalImages;
+
+            // Interpolate width between overlapped (full) and spread (shared)
+            let imageWidth = availableWidth + spacing * (widthWhenSpread - availableWidth);
+            let imageHeight = imageWidth / imgRatio;
+
+            // Constrain by height if needed
+            if (imageHeight > availableHeight) {
+                imageHeight = availableHeight;
+                imageWidth = imageHeight * imgRatio;
+            }
+
+            // Calculate spread positioning
+            const fullSpreadWidth = (widthWhenSpread * totalImages) + fullGap;
+            const startXFullSpread = -fullSpreadWidth / 2;
 
             ctx.save();
             ctx.translate(width / 2, height / 2);
 
-            // Draw rounded rectangle with shadow and clipping
-            this.roundRect(ctx, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight, this.composition.transforms.radius);
+            // Draw each screenshot
+            this.foregroundImages.forEach((img, index) => {
+                const xCenterFullSpread = startXFullSpread + widthWhenSpread / 2 + (index * (widthWhenSpread + maxGap));
+                const xCenter = xCenterFullSpread * spacing;
 
-            ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-            ctx.shadowBlur = this.composition.transforms.shadow * 2;
-            ctx.shadowOffsetY = this.composition.transforms.shadow;
-            ctx.fillStyle = "white";
+                // Interpolate rotation from -rotate (first) to +rotate (last)
+                const rotation = totalImages > 1 
+                    ? -rotate + (2 * rotate * index) / (totalImages - 1)
+                    : 0;
 
-            ctx.fill();
-            ctx.clip();
-            ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+                // Interpolate vertical offset from -offset (highest) to +offset (lowest)
+                const elevation = totalImages > 1
+                    ? (-elevate + (2 * elevate * index) / (totalImages - 1)) * (availableHeight / 100)
+                    : 0;
+
+                ctx.save();
+                ctx.translate(xCenter, elevation);
+                ctx.rotate((rotation * Math.PI) / 180);
+
+                // Draw rounded rectangle, then add shadow, clip it, and finally add the image
+                this.roundRect(ctx, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
+
+                if (shadow) {
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+                    ctx.shadowBlur = shadow * 2;
+                    ctx.shadowOffsetY = shadow;
+                    ctx.fillStyle = "white";
+                    ctx.fill();
+                }
+
+                ctx.clip();
+                ctx.drawImage(img, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
+                ctx.restore();
+            });
 
             ctx.restore();
         }
@@ -306,15 +381,22 @@ export class AppHome extends AppComponent {
     private async handleFileInput({ detail }: CustomEvent<Base64File>) {
         const { name, mimeType, size, data } = detail;
         const file = await new FileUpload("screenshot", name, mimeType, size, data).commit();
-        const composition = await new ComposedImage(file.reference, Object.keys(BackgroundImages)[0]).commit();
 
-        Router.go(`/home/${composition.uuid}`);
+        if (this.composition) {
+            this.composition.images.push(file.reference);
+            this.screenshots.push(file);
+            await this.loadForegroundImages();
+            this.updateAndCommit();
+        } else {
+            const composition = await new ComposedImage([file.reference], Object.keys(BackgroundImages)[0]).commit();
+            Router.go(`/home/${composition.uuid}`);
+        }
     }
 
     private handleResetClick() {
         if (!this.composition) return;
 
-        this.composition.transforms = { ...TransformDefaults };
+        this.composition.transforms = ComposedImage.defaults;
         this.updateAndCommit();
     }
 
@@ -341,6 +423,29 @@ export class AppHome extends AppComponent {
                     this.backgrounds?.find(image => image.uuid === detail)?.delete();
                     if (this.composition?.background === detail) {
                         this.composition.background = Object.keys(BackgroundImages)[0];
+                        this.updateAndCommit();
+                    }
+                }
+            }
+        });
+    }
+
+    private async handleScreenshotClick() {
+        const file = await uploadFile("base64Binary");
+        this.handleFileInput({ detail: file } as CustomEvent<Base64File>);
+    }
+
+    private handleDeleteScreenshot({ detail }: CustomEvent<string>) {
+        document.createElement("app-dialog").show({
+            title: "Please confirm",
+            text: "Do you really want to delete this screenshot?",
+            actions: {
+                Delete: () => {
+                    this.screenshots.find(image => image.uuid === detail)?.delete();
+                    if (this.composition) {
+                        this.composition.images = this.composition.images.filter(ref => ref.uuid !== detail);
+                        this.screenshots = this.screenshots.filter(img => img.uuid !== detail);
+                        this.loadForegroundImages();
                         this.updateAndCommit();
                     }
                 }
@@ -439,16 +544,18 @@ export class AppHome extends AppComponent {
         }
     }
 
-    private async loadForegroundImage() {
-        if (!this.composition) return;
+    private async loadForegroundImages() {
+        const imagePromises = this.composition?.images.map(async image => {
+            const file = await image.data;
+            return new Promise<HTMLImageElement>(resolve => {
+                const image = new Image();
+                image.src = file.dataURL;
+                image.onload = () => resolve(image);
+            });
+        });
 
-        const file = await this.composition.image.data;
-        const image = new Image();
-        image.src = file.dataURL;
-        image.onload = () => {
-            this.foregroundImage = image;
-            this.drawCanvas();
-        }
+        this.foregroundImages = await Promise.all(imagePromises ?? []);
+        this.drawCanvas();
     }
 
     private async updateAndCommit() {
@@ -468,12 +575,18 @@ export class AppHome extends AppComponent {
         this.composition = await ComposedImage.where({ uuid: location.params.uuid as string }).first();
     }
 
-    updated(properties: Map<string, unknown>) {
+    async updated(properties: Map<string, unknown>) {
+        if (properties.has("composition") && this.composition) {
+            this.screenshots = await Promise.all(
+                this.composition.images.map(ref => ref.data) ?? []
+            );
+        }
+
         if (
             ["composition", "backgrounds"].some(key => properties.has(key))
             && this.composition && this.backgrounds
         ) {
-            this.loadForegroundImage();
+            this.loadForegroundImages();
             this.loadBackgroundImage();
 
             if (!this.composition.preview) {
