@@ -2,7 +2,7 @@ import { AppComponent, customElement, state, css, html } from "components/base/a
 import { downloadObjectURL, uploadFile, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
 import { all } from "persistence/controller/lit-controller.ts";
-import { ComposedImage, TransformOptions, TransformDefaults, AspectRatios } from "../../models/composed-image.ts";
+import { ComposedImage, TransformOptions, AspectRatios } from "../../models/composed-image.ts";
 import { FileUpload } from "../../models/file-upload.ts";
 import { Router, type RouterLocation } from "@vaadin/router";
 
@@ -199,7 +199,7 @@ export class AppHome extends AppComponent {
                                     min=${value.min}
                                     max=${value.max}
                                     step=${value.step}
-                                    value=${this.composition?.transforms[key] ?? TransformDefaults[key]}
+                                    value=${this.composition?.transforms[key] ?? value.default}
                                     @input=${this.handleNumericInput}
                                 >
                                     ${value.name}
@@ -392,7 +392,7 @@ export class AppHome extends AppComponent {
     private handleResetClick() {
         if (!this.composition) return;
 
-        this.composition.transforms = { ...TransformDefaults };
+        this.composition.transforms = ComposedImage.defaults;
         this.updateAndCommit();
     }
 
