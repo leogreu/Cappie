@@ -545,22 +545,16 @@ export class AppHome extends AppComponent {
     }
 
     private async loadForegroundImages() {
-        if (!this.composition?.images?.length) {
-            this.foregroundImages = [];
-            this.drawCanvas();
-            return;
-        }
-
-        const imagePromises = this.composition.images.map(async (imageRef) => {
-            const file = await imageRef.data;
-            return new Promise<HTMLImageElement>((resolve) => {
+        const imagePromises = this.composition?.images.map(async image => {
+            const file = await image.data;
+            return new Promise<HTMLImageElement>(resolve => {
                 const image = new Image();
                 image.src = file.dataURL;
                 image.onload = () => resolve(image);
             });
         });
 
-        this.foregroundImages = await Promise.all(imagePromises);
+        this.foregroundImages = await Promise.all(imagePromises ?? []);
         this.drawCanvas();
     }
 
@@ -583,8 +577,9 @@ export class AppHome extends AppComponent {
 
     async updated(properties: Map<string, unknown>) {
         if (properties.has("composition") && this.composition) {
-            // Load screenshots for this composition
-            await this.loadCompositionScreenshots();
+            this.screenshots = await Promise.all(
+                this.composition?.images.map(ref => ref.data) ?? []
+            );
         }
         
         if (
@@ -598,17 +593,6 @@ export class AppHome extends AppComponent {
                 this.commit();
             }
         }
-    }
-
-    private async loadCompositionScreenshots() {
-        if (!this.composition?.images) {
-            this.screenshots = [];
-            return;
-        }
-
-        this.screenshots = (await Promise.all(
-            this.composition.images.map(ref => ref.data)
-        )).filter(Boolean) as FileUpload[];
     }
 
     firstUpdated() {
