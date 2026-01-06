@@ -435,26 +435,13 @@ export class AppHome extends AppComponent {
             title: "Please confirm",
             text: "Do you really want to delete this screenshot?",
             actions: {
-                Delete: async () => {
+                Delete: () => {
+                    this.screenshots.find(image => image.uuid === detail)?.delete();
                     if (this.composition) {
-                        // Find the screenshot to delete
-                        const screenshotToDelete = this.screenshots.find(img => img.uuid === detail);
-                        
-                        // Remove from composition and commit first to remove the reference
                         this.composition.images = this.composition.images.filter(ref => ref.uuid !== detail);
-                        await this.composition.commit();
-                        
-                        // Update local state
                         this.screenshots = this.screenshots.filter(img => img.uuid !== detail);
-                        
-                        // Now delete the file record
-                        if (screenshotToDelete) {
-                            await screenshotToDelete.delete();
-                        }
-                        
-                        // Reload and redraw
-                        await this.loadForegroundImages();
-                        this.drawCanvas();
+                        this.loadForegroundImages();
+                        this.updateAndCommit();
                     }
                 }
             }
