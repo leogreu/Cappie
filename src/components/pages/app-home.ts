@@ -286,28 +286,19 @@ export class AppHome extends AppComponent {
 
         // Draw foreground if available
         if (this.foregroundImages.length > 0) {
+            const { spacing, radius, shadow, scale } = this.composition.transforms;
             const totalImages = this.foregroundImages.length;
-            const spacing = this.composition.transforms.spacing;
-            
-            // Calculate available dimensions
-            const availableWidth = width * this.composition.transforms.scale;
-            const availableHeight = height * this.composition.transforms.scale;
-            
-            // When spacing is 1, images are side by side with gaps
-            // When spacing is 0, images are fully overlapped at center
-            const maxGap = 20; // Maximum gap between images in pixels
+            const availableWidth = width * scale;
+            const availableHeight = height * scale;
+            const maxGap = 20;
             const fullGap = (totalImages - 1) * maxGap;
             
-            // Calculate the first image's aspect ratio
-            const firstImg = this.foregroundImages[0];
-            const imgRatio = firstImg.width / firstImg.height;
-            
-            // Calculate image width based on spacing
-            // At spacing=0 (overlapped): each image uses full available width
-            // At spacing=1 (spread): images share the available width with gaps
-            const widthWhenOverlapped = availableWidth;
+            // Calculate image dimensions based on first image's aspect ratio
+            const imgRatio = this.foregroundImages[0].width / this.foregroundImages[0].height;
             const widthWhenSpread = (availableWidth - fullGap) / totalImages;
-            let imageWidth = widthWhenOverlapped + spacing * (widthWhenSpread - widthWhenOverlapped);
+            
+            // Interpolate width between overlapped (full) and spread (shared)
+            let imageWidth = availableWidth + spacing * (widthWhenSpread - availableWidth);
             let imageHeight = imageWidth / imgRatio;
             
             // Constrain by height if needed
@@ -316,27 +307,19 @@ export class AppHome extends AppComponent {
                 imageWidth = imageHeight * imgRatio;
             }
             
-            // Calculate fully spread positions (centered around 0)
-            // Use the spread width for positioning calculations
+            // Calculate spread positioning
             const fullSpreadWidth = (widthWhenSpread * totalImages) + fullGap;
             const startXFullSpread = -fullSpreadWidth / 2;
-            
-            const radius = this.composition.transforms.radius;
-            const shadow = this.composition.transforms.shadow;
             
             ctx.save();
             ctx.translate(width / 2, height / 2);
             
             // Draw each screenshot
             this.foregroundImages.forEach((img, index) => {
-                // Calculate center position when fully spread
                 const xCenterFullSpread = startXFullSpread + widthWhenSpread / 2 + (index * (widthWhenSpread + maxGap));
-                // Interpolate between center (0) and full spread center position based on spacing
                 const xCenter = xCenterFullSpread * spacing;
                 
                 ctx.save();
-                
-                // Draw rounded rectangle with shadow and clipping
                 this.roundRect(ctx, xCenter - imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
                 
                 ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
@@ -347,7 +330,6 @@ export class AppHome extends AppComponent {
                 ctx.fill();
                 ctx.clip();
                 ctx.drawImage(img, xCenter - imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
-                
                 ctx.restore();
             });
 
@@ -540,30 +522,23 @@ export class AppHome extends AppComponent {
     }
 
     private async loadForegroundImages() {
-        if (!this.composition || !this.composition.images || this.composition.images.length === 0) {
+        if (!this.composition?.images?.length) {
             this.foregroundImages = [];
             this.drawCanvas();
             return;
         }
 
-        const loadedImages: HTMLImageElement[] = [];
-        let loadedCount = 0;
-        
-        for (const imageRef of this.composition.images) {
+        const imagePromises = this.composition.images.map(async (imageRef) => {
             const file = await imageRef.data;
-            const image = new Image();
-            image.src = file.dataURL;
-            
-            image.onload = () => {
-                loadedImages.push(image);
-                loadedCount++;
-                
-                if (loadedCount === this.composition!.images.length) {
-                    this.foregroundImages = loadedImages;
-                    this.drawCanvas();
-                }
-            };
-        }
+            return new Promise<HTMLImageElement>((resolve) => {
+                const image = new Image();
+                image.src = file.dataURL;
+                image.onload = () => resolve(image);
+            });
+        });
+
+        this.foregroundImages = await Promise.all(imagePromises);
+        this.drawCanvas();
     }
 
     private async updateAndCommit() {
@@ -603,19 +578,14 @@ export class AppHome extends AppComponent {
     }
 
     private async loadCompositionScreenshots() {
-        if (!this.composition || !this.composition.images) {
+        if (!this.composition?.images) {
             this.screenshots = [];
             return;
         }
 
-        const loadedScreenshots: FileUpload[] = [];
-        for (const imageRef of this.composition.images) {
-            const file = await imageRef.data;
-            if (file) {
-                loadedScreenshots.push(file);
-            }
-        }
-        this.screenshots = loadedScreenshots;
+        this.screenshots = (await Promise.all(
+            this.composition.images.map(ref => ref.data)
+        )).filter(Boolean) as FileUpload[];
     }
 
     firstUpdated() {
