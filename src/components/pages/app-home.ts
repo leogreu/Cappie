@@ -27,13 +27,13 @@ export class AppHome extends AppComponent {
     composition?: ComposedImage;
 
     @state()
+    screenshots: FileUpload[] = [];
+
+    @state()
     error?: "safari-canvas-filters";
 
     @all(FileUpload.where({ type: "background" }).sort("createdDate").asc())
     backgrounds?: FileUpload[];
-
-    @state()
-    screenshots: FileUpload[] = [];
 
     // Keep references for performance reasons
     backgroundImage?: HTMLImageElement;
@@ -122,10 +122,7 @@ export class AppHome extends AppComponent {
                                 <app-button fullwidth @click=${this.handleScreenshotClick}>
                                     <app-icon name="plus-regular"></app-icon>
                                 </app-button>
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
+                                ${Array.from({ length: 4 }).map(() => html`<div></div>`)}
                             </app-group>
                         </app-group>
                         <app-group direction="column">
