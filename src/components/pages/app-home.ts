@@ -190,19 +190,22 @@ export class AppHome extends AppComponent {
                                 <app-text slot="text">Safari is currently the only browser without enabled Canvas Filters by default. To enable it, click on 'Safari' in the top left menu bar, then 'Settings', 'Feature Flags', search for 'Canvas' and enable 'Canvas Filters'. Then, please reload the page.</app-text>
                             </app-notification>
                         `}
-                        ${Object.entries(TransformOptions).map(([key, value]) => html`
-                            <app-slider
-                                name=${key}
-                                type="range"
-                                min=${value.min}
-                                max=${value.max}
-                                step=${value.step}
-                                value=${this.composition?.transforms[key] ?? TransformDefaults[key]}
-                                @input=${this.handleNumericInput}
-                            >
-                                ${value.name}
-                            </app-slider>
-                        `)}
+                        ${Object.entries(TransformOptions)
+                            .filter(([_, value]) => !value.requiresMultiple || this.screenshots.length > 1)
+                            .map(([key, value]) => html`
+                                <app-slider
+                                    name=${key}
+                                    type="range"
+                                    min=${value.min}
+                                    max=${value.max}
+                                    step=${value.step}
+                                    value=${this.composition?.transforms[key] ?? TransformDefaults[key]}
+                                    @input=${this.handleNumericInput}
+                                >
+                                    ${value.name}
+                                </app-slider>
+                            `)
+                        }
                     </app-group>
                     <app-group slot="footer">
                         <app-dropdown horizontal="left" vertical="top" fullwidth>

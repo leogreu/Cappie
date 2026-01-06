@@ -7,6 +7,7 @@ export const TransformOptions: {
         min: number;
         max: number;
         step: number;
+        requiresMultiple?: boolean;
     };
 } = {
     blur: {
@@ -37,19 +38,22 @@ export const TransformOptions: {
         name: "Spacing",
         min: 0,
         max: 1,
-        step: 0.01
+        step: 0.01,
+        requiresMultiple: true
     },
     rotate: {
-        name: "Rotate",
+        name: "Rotation",
         min: 0,
         max: 15,
-        step: 1
+        step: 1,
+        requiresMultiple: true
     },
     elevate: {
         name: "Elevation",
         min: -15,
         max: 15,
-        step: 1
+        step: 1,
+        requiresMultiple: true
     }
 };
 
