@@ -286,7 +286,7 @@ export class AppHome extends AppComponent {
 
         // Draw foreground if available
         if (this.foregroundImages.length > 0) {
-            const { spacing, radius, shadow, scale } = this.composition.transforms;
+            const { spacing, radius, shadow, scale, rotate } = this.composition.transforms;
             const totalImages = this.foregroundImages.length;
             const availableWidth = width * scale;
             const availableHeight = height * scale;
@@ -318,9 +318,16 @@ export class AppHome extends AppComponent {
             this.foregroundImages.forEach((img, index) => {
                 const xCenterFullSpread = startXFullSpread + widthWhenSpread / 2 + (index * (widthWhenSpread + maxGap));
                 const xCenter = xCenterFullSpread * spacing;
+                // Interpolate rotation from -rotate (first) to +rotate (last)
+                const rotation = totalImages > 1 
+                    ? -rotate + (2 * rotate * index) / (totalImages - 1)
+                    : 0;
                 
                 ctx.save();
-                this.roundRect(ctx, xCenter - imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
+                ctx.translate(xCenter, 0);
+                ctx.rotate((rotation * Math.PI) / 180);
+                
+                this.roundRect(ctx, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
                 
                 ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
                 ctx.shadowBlur = shadow * 2;
@@ -329,7 +336,7 @@ export class AppHome extends AppComponent {
                 
                 ctx.fill();
                 ctx.clip();
-                ctx.drawImage(img, xCenter - imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
+                ctx.drawImage(img, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
                 ctx.restore();
             });
 

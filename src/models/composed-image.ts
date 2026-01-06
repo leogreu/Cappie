@@ -38,6 +38,12 @@ export const TransformOptions: {
         min: 0,
         max: 1,
         step: 0.01
+    },
+    rotate: {
+        name: "Rotate",
+        min: 0,
+        max: 15,
+        step: 1
     }
 };
 
@@ -48,7 +54,8 @@ export const TransformDefaults: {
     scale: 0.75,
     radius: 15,
     shadow: 15,
-    spacing: 1
+    spacing: 1,
+    rotate: 0
 };
 
 export const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
