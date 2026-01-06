@@ -32,9 +32,12 @@ export class AppHome extends AppComponent {
     @all(FileUpload.where({ type: "background" }).sort("createdDate").asc())
     backgrounds?: FileUpload[];
 
+    @state()
+    screenshots: FileUpload[] = [];
+
     // Keep references for performance reasons
     backgroundImage?: HTMLImageElement;
-    foregroundImage?: HTMLImageElement;
+    foregroundImages: HTMLImageElement[] = [];
 
     static styles = css`
         :host {
@@ -98,6 +101,28 @@ export class AppHome extends AppComponent {
                         @click=${this.handleResetClick}
                     ></icon-button>
                     <app-group direction="column" gap="huge">
+                        <app-group direction="column">
+                            <app-paragraph bold>
+                                Screenshots
+                            </app-paragraph>
+                            <app-group direction="grid" @click=${this.handleScreenshotClick}>
+                                ${this.screenshots.map(image => html`
+                                    <image-button
+                                        id=${image.uuid}
+                                        deletable
+                                        @delete-image=${this.handleDeleteScreenshot}
+                                    >
+                                        <img src=${image.dataURL}>
+                                    </image-button>
+                                `)}
+                                <app-button id="new-screenshot" fullwidth style="aspect-ratio: 16 / 9;">
+                                    <app-icon name="plus-regular"></app-icon>
+                                </app-button>
+                                <div></div>
+                                <div></div>
+                                <div></div>
+                            </app-group>
+                        </app-group>
                         <app-group direction="column">
                             <app-paragraph bold>
                                 Background
@@ -260,28 +285,71 @@ export class AppHome extends AppComponent {
         }
 
         // Draw foreground if available
-        if (this.foregroundImage) {
-            const img = this.foregroundImage;
-            const imgRatio = img.width / img.height;
-
-            // Calculate scaled dimensions while preserving aspect ratio
-            const drawHeight = Math.min(height, (width / imgRatio)) * this.composition.transforms.scale;
-            const drawWidth = drawHeight * imgRatio;
-
+        if (this.foregroundImages.length > 0) {
+            const totalImages = this.foregroundImages.length;
+            const spacing = this.composition.transforms.spacing;
+            
+            // Calculate available dimensions
+            const availableWidth = width * this.composition.transforms.scale;
+            const availableHeight = height * this.composition.transforms.scale;
+            
+            // When spacing is 1, images are side by side with gaps
+            // When spacing is 0, images are fully overlapped at center
+            const maxGap = 20; // Maximum gap between images in pixels
+            const fullGap = (totalImages - 1) * maxGap;
+            
+            // Calculate the first image's aspect ratio
+            const firstImg = this.foregroundImages[0];
+            const imgRatio = firstImg.width / firstImg.height;
+            
+            // Calculate image width based on spacing
+            // At spacing=0 (overlapped): each image uses full available width
+            // At spacing=1 (spread): images share the available width with gaps
+            const widthWhenOverlapped = availableWidth;
+            const widthWhenSpread = (availableWidth - fullGap) / totalImages;
+            let imageWidth = widthWhenOverlapped + spacing * (widthWhenSpread - widthWhenOverlapped);
+            let imageHeight = imageWidth / imgRatio;
+            
+            // Constrain by height if needed
+            if (imageHeight > availableHeight) {
+                imageHeight = availableHeight;
+                imageWidth = imageHeight * imgRatio;
+            }
+            
+            // Calculate fully spread positions (centered around 0)
+            // Use the spread width for positioning calculations
+            const fullSpreadWidth = (widthWhenSpread * totalImages) + fullGap;
+            const startXFullSpread = -fullSpreadWidth / 2;
+            
+            const radius = this.composition.transforms.radius;
+            const shadow = this.composition.transforms.shadow;
+            
             ctx.save();
             ctx.translate(width / 2, height / 2);
-
-            // Draw rounded rectangle with shadow and clipping
-            this.roundRect(ctx, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight, this.composition.transforms.radius);
-
-            ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-            ctx.shadowBlur = this.composition.transforms.shadow * 2;
-            ctx.shadowOffsetY = this.composition.transforms.shadow;
-            ctx.fillStyle = "white";
-
-            ctx.fill();
-            ctx.clip();
-            ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+            
+            // Draw each screenshot
+            this.foregroundImages.forEach((img, index) => {
+                // Calculate center position when fully spread
+                const xCenterFullSpread = startXFullSpread + widthWhenSpread / 2 + (index * (widthWhenSpread + maxGap));
+                // Interpolate between center (0) and full spread center position based on spacing
+                const xCenter = xCenterFullSpread * spacing;
+                
+                ctx.save();
+                
+                // Draw rounded rectangle with shadow and clipping
+                this.roundRect(ctx, xCenter - imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
+                
+                ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+                ctx.shadowBlur = shadow * 2;
+                ctx.shadowOffsetY = shadow;
+                ctx.fillStyle = "white";
+                
+                ctx.fill();
+                ctx.clip();
+                ctx.drawImage(img, xCenter - imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
+                
+                ctx.restore();
+            });
 
             ctx.restore();
         }
@@ -306,7 +374,7 @@ export class AppHome extends AppComponent {
     private async handleFileInput({ detail }: CustomEvent<Base64File>) {
         const { name, mimeType, size, data } = detail;
         const file = await new FileUpload("screenshot", name, mimeType, size, data).commit();
-        const composition = await new ComposedImage(file.reference, Object.keys(BackgroundImages)[0]).commit();
+        const composition = await new ComposedImage([file.reference], Object.keys(BackgroundImages)[0]).commit();
 
         Router.go(`/home/${composition.uuid}`);
     }
@@ -342,6 +410,51 @@ export class AppHome extends AppComponent {
                     if (this.composition?.background === detail) {
                         this.composition.background = Object.keys(BackgroundImages)[0];
                         this.updateAndCommit();
+                    }
+                }
+            }
+        });
+    }
+
+    private async handleScreenshotClick({ target }: MouseEvent) {
+        const { id } = target as HTMLElement;
+        if (id === "new-screenshot") {
+            const { name, mimeType, size, data } = await uploadFile("base64Binary");
+            const image = await new FileUpload("screenshot", name, mimeType, size, data).commit();
+            if (this.composition) {
+                this.composition.images.push(image.reference);
+                this.screenshots.push(image);
+                await this.loadForegroundImages();
+                this.updateAndCommit();
+            }
+        }
+    }
+
+    private handleDeleteScreenshot({ detail }: CustomEvent<string>) {
+        document.createElement("app-dialog").show({
+            title: "Please confirm",
+            text: "Do you really want to delete this screenshot?",
+            actions: {
+                Delete: async () => {
+                    if (this.composition) {
+                        // Find the screenshot to delete
+                        const screenshotToDelete = this.screenshots.find(img => img.uuid === detail);
+                        
+                        // Remove from composition and commit first to remove the reference
+                        this.composition.images = this.composition.images.filter(ref => ref.uuid !== detail);
+                        await this.composition.commit();
+                        
+                        // Update local state
+                        this.screenshots = this.screenshots.filter(img => img.uuid !== detail);
+                        
+                        // Now delete the file record
+                        if (screenshotToDelete) {
+                            await screenshotToDelete.delete();
+                        }
+                        
+                        // Reload and redraw
+                        await this.loadForegroundImages();
+                        this.drawCanvas();
                     }
                 }
             }
@@ -439,15 +552,30 @@ export class AppHome extends AppComponent {
         }
     }
 
-    private async loadForegroundImage() {
-        if (!this.composition) return;
-
-        const file = await this.composition.image.data;
-        const image = new Image();
-        image.src = file.dataURL;
-        image.onload = () => {
-            this.foregroundImage = image;
+    private async loadForegroundImages() {
+        if (!this.composition || !this.composition.images || this.composition.images.length === 0) {
+            this.foregroundImages = [];
             this.drawCanvas();
+            return;
+        }
+
+        const loadedImages: HTMLImageElement[] = [];
+        let loadedCount = 0;
+        
+        for (const imageRef of this.composition.images) {
+            const file = await imageRef.data;
+            const image = new Image();
+            image.src = file.dataURL;
+            
+            image.onload = () => {
+                loadedImages.push(image);
+                loadedCount++;
+                
+                if (loadedCount === this.composition!.images.length) {
+                    this.foregroundImages = loadedImages;
+                    this.drawCanvas();
+                }
+            };
         }
     }
 
@@ -468,18 +596,39 @@ export class AppHome extends AppComponent {
         this.composition = await ComposedImage.where({ uuid: location.params.uuid as string }).first();
     }
 
-    updated(properties: Map<string, unknown>) {
+    async updated(properties: Map<string, unknown>) {
+        if (properties.has("composition") && this.composition) {
+            // Load screenshots for this composition
+            await this.loadCompositionScreenshots();
+        }
+        
         if (
             ["composition", "backgrounds"].some(key => properties.has(key))
             && this.composition && this.backgrounds
         ) {
-            this.loadForegroundImage();
+            this.loadForegroundImages();
             this.loadBackgroundImage();
 
             if (!this.composition.preview) {
                 this.commit();
             }
         }
+    }
+
+    private async loadCompositionScreenshots() {
+        if (!this.composition || !this.composition.images) {
+            this.screenshots = [];
+            return;
+        }
+
+        const loadedScreenshots: FileUpload[] = [];
+        for (const imageRef of this.composition.images) {
+            const file = await imageRef.data;
+            if (file) {
+                loadedScreenshots.push(file);
+            }
+        }
+        this.screenshots = loadedScreenshots;
     }
 
     firstUpdated() {

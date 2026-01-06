@@ -32,6 +32,12 @@ export const TransformOptions: {
         min: 0,
         max: 25,
         step: 1
+    },
+    spacing: {
+        name: "Spacing",
+        min: 0,
+        max: 1,
+        step: 0.01
     }
 };
 
@@ -41,7 +47,8 @@ export const TransformDefaults: {
     blur: 10,
     scale: 0.75,
     radius: 15,
-    shadow: 15
+    shadow: 15,
+    spacing: 1
 };
 
 export const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
@@ -49,7 +56,7 @@ export const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
 @block({ collection: "files", store: "composed-image" })
 export class ComposedImage extends DataBlock {
     @field({ relation: FileUpload, lazy: true })
-    image: BlockReference<FileUpload>;
+    images: BlockReference<FileUpload>[];
 
     @field()
     background: string;
@@ -66,9 +73,9 @@ export class ComposedImage extends DataBlock {
     @field()
     preview?: string;
 
-    constructor(image: BlockReference<FileUpload>, background: string) {
+    constructor(images: BlockReference<FileUpload>[], background: string) {
         super();
-        this.image = image;
+        this.images = images;
         this.background = background;
     }
 }
