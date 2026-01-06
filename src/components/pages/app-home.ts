@@ -342,14 +342,17 @@ export class AppHome extends AppComponent {
                 ctx.translate(xCenter, elevation);
                 ctx.rotate((rotation * Math.PI) / 180);
 
+                // Draw rounded rectangle, then add shadow, clip it, and finally add the image
                 this.roundRect(ctx, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
 
-                ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-                ctx.shadowBlur = shadow * 2;
-                ctx.shadowOffsetY = shadow;
-                ctx.fillStyle = "white";
+                if (shadow) {
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+                    ctx.shadowBlur = shadow * 2;
+                    ctx.shadowOffsetY = shadow;
+                    ctx.fillStyle = "white";
+                    ctx.fill();
+                }
 
-                ctx.fill();
                 ctx.clip();
                 ctx.drawImage(img, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
                 ctx.restore();
