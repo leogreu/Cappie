@@ -109,7 +109,7 @@ export class AppHome extends AppComponent {
                             <app-paragraph bold>
                                 Screenshots
                             </app-paragraph>
-                            <app-group direction="grid" @click=${this.handleScreenshotClick}>
+                            <app-group direction="grid">
                                 ${this.screenshots.map(image => html`
                                     <image-button
                                         id=${image.uuid}
@@ -119,7 +119,7 @@ export class AppHome extends AppComponent {
                                         <img src=${image.dataURL}>
                                     </image-button>
                                 `)}
-                                <app-button id="new-screenshot" fullwidth>
+                                <app-button fullwidth @click=${this.handleScreenshotClick}>
                                     <app-icon name="plus-regular"></app-icon>
                                 </app-button>
                                 <div></div>
@@ -186,8 +186,12 @@ export class AppHome extends AppComponent {
                         </app-group>
                         ${this.error && html`
                             <app-notification type="danger">
-                                <app-text slot="title">Safari without Canvas Filters</app-text>
-                                <app-text slot="text">Safari is currently the only browser without enabled Canvas Filters by default. To enable it, click on 'Safari' in the top left menu bar, then 'Settings', 'Feature Flags', search for 'Canvas' and enable 'Canvas Filters'. Then, please reload the page.</app-text>
+                                <app-text slot="title">
+                                    Safari without Canvas Filters
+                                </app-text>
+                                <app-text slot="text">
+                                    Safari is currently the only browser without enabled Canvas Filters by default. To enable it, click on 'Safari' in the top left menu bar, then 'Settings', 'Feature Flags', search for 'Canvas' and enable 'Canvas Filters'. Then, please reload the page.
+                                </app-text>
                             </app-notification>
                         `}
                         ${Object.entries(TransformOptions)
@@ -300,33 +304,33 @@ export class AppHome extends AppComponent {
             const availableHeight = height * scale;
             const maxGap = 20;
             const fullGap = (totalImages - 1) * maxGap;
-            
+
             // Calculate image dimensions based on first image's aspect ratio
             const imgRatio = this.foregroundImages[0].width / this.foregroundImages[0].height;
             const widthWhenSpread = (availableWidth - fullGap) / totalImages;
-            
+
             // Interpolate width between overlapped (full) and spread (shared)
             let imageWidth = availableWidth + spacing * (widthWhenSpread - availableWidth);
             let imageHeight = imageWidth / imgRatio;
-            
+
             // Constrain by height if needed
             if (imageHeight > availableHeight) {
                 imageHeight = availableHeight;
                 imageWidth = imageHeight * imgRatio;
             }
-            
+
             // Calculate spread positioning
             const fullSpreadWidth = (widthWhenSpread * totalImages) + fullGap;
             const startXFullSpread = -fullSpreadWidth / 2;
             
             ctx.save();
             ctx.translate(width / 2, height / 2);
-            
+
             // Draw each screenshot
             this.foregroundImages.forEach((img, index) => {
                 const xCenterFullSpread = startXFullSpread + widthWhenSpread / 2 + (index * (widthWhenSpread + maxGap));
                 const xCenter = xCenterFullSpread * spacing;
-                
+
                 // Interpolate rotation from -rotate (first) to +rotate (last)
                 const rotation = totalImages > 1 
                     ? -rotate + (2 * rotate * index) / (totalImages - 1)
@@ -336,18 +340,18 @@ export class AppHome extends AppComponent {
                 const elevation = totalImages > 1
                     ? (-elevate + (2 * elevate * index) / (totalImages - 1)) * (availableHeight / 100)
                     : 0;
-                
+
                 ctx.save();
                 ctx.translate(xCenter, elevation);
                 ctx.rotate((rotation * Math.PI) / 180);
-                
+
                 this.roundRect(ctx, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
-                
+
                 ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
                 ctx.shadowBlur = shadow * 2;
                 ctx.shadowOffsetY = shadow;
                 ctx.fillStyle = "white";
-                
+
                 ctx.fill();
                 ctx.clip();
                 ctx.drawImage(img, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
@@ -426,12 +430,9 @@ export class AppHome extends AppComponent {
         });
     }
 
-    private async handleScreenshotClick({ target }: MouseEvent) {
-        const { id } = target as HTMLElement;
-        if (id === "new-screenshot") {
-            const file = await uploadFile("base64Binary");
-            this.handleFileInput({ detail: file } as CustomEvent<Base64File>);
-        }
+    private async handleScreenshotClick() {
+        const file = await uploadFile("base64Binary");
+        this.handleFileInput({ detail: file } as CustomEvent<Base64File>);
     }
 
     private handleDeleteScreenshot({ detail }: CustomEvent<string>) {

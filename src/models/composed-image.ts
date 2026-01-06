@@ -69,7 +69,7 @@ export const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
 
 @block({ collection: "files", store: "composed-image" })
 export class ComposedImage extends DataBlock {
-    @field({ relation: FileUpload, lazy: true })
+    @field({ relation: [FileUpload], lazy: true })
     images: BlockReference<FileUpload>[];
 
     @field()
@@ -82,7 +82,7 @@ export class ComposedImage extends DataBlock {
     portrait = false;
 
     @field({ type: Object })
-    transforms: Record<string, number> = ComposedImage.defaults;
+    transforms = ComposedImage.defaults;
 
     @field()
     preview?: string;
