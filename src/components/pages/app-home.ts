@@ -322,7 +322,7 @@ export class AppHome extends AppComponent {
             // Calculate spread positioning
             const fullSpreadWidth = (widthWhenSpread * totalImages) + fullGap;
             const startXFullSpread = -fullSpreadWidth / 2;
-            
+
             ctx.save();
             ctx.translate(width / 2, height / 2);
 
@@ -381,7 +381,7 @@ export class AppHome extends AppComponent {
     private async handleFileInput({ detail }: CustomEvent<Base64File>) {
         const { name, mimeType, size, data } = detail;
         const file = await new FileUpload("screenshot", name, mimeType, size, data).commit();
-        
+
         if (this.composition) {
             this.composition.images.push(file.reference);
             this.screenshots.push(file);
@@ -578,10 +578,10 @@ export class AppHome extends AppComponent {
     async updated(properties: Map<string, unknown>) {
         if (properties.has("composition") && this.composition) {
             this.screenshots = await Promise.all(
-                this.composition?.images.map(ref => ref.data) ?? []
+                this.composition.images.map(ref => ref.data) ?? []
             );
         }
-        
+
         if (
             ["composition", "backgrounds"].some(key => properties.has(key))
             && this.composition && this.backgrounds
