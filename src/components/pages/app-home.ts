@@ -2,7 +2,7 @@ import { AppComponent, customElement, state, css, html } from "components/base/a
 import { downloadObjectURL, uploadFile, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
 import { all } from "persistence/controller/lit-controller.ts";
-import { ComposedImage, TransformOptions, AspectRatios, BezelOptions, BezelConfigs, type BezelType } from "../../models/composed-image.ts";
+import { ComposedImage, TransformOptions, AspectRatios, BezelOptions, BezelConfigs } from "../../models/composed-image.ts";
 import { FileUpload } from "../../models/file-upload.ts";
 import { Router, type RouterLocation } from "@vaadin/router";
 
@@ -562,9 +562,8 @@ export class AppHome extends AppComponent {
         if (!this.composition) return;
 
         const { id } = target as HTMLElement;
-        if (BezelOptions.includes(id as BezelType)) {
-            this.composition.bezel = id as BezelType;
-
+        if (BezelOptions.includes(id)) {
+            this.composition.bezel = id;
             this.loadBezelImage();
             this.updateAndCommit();
         }

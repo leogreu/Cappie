@@ -1,6 +1,10 @@
 import { DataBlock, block, field, type BlockReference } from "persistence/data-block.ts";
 import { FileUpload } from "./file-upload.ts";
 
+export const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
+
+export const BezelOptions = ["", "iphone", "ipad", "macbook"];
+
 export const TransformOptions: {
     [key: string]: {
         name: string;
@@ -65,27 +69,20 @@ export const TransformOptions: {
     }
 };
 
-export const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
-
-export const BezelOptions = ["", "iphone", "ipad", "macbook"] as const;
-export type BezelType = typeof BezelOptions[number];
-
-// Bezel configurations: define where the screenshot should be placed within each bezel
-// All values are in percentages relative to the bezel image dimensions
-export const BezelConfigs: Record<Exclude<BezelType, "">, {
-    label: string;
-    path: string;
-    // Screen area within the bezel (as percentages)
-    screenX: number;      // Left offset percentage
-    screenY: number;      // Top offset percentage
-    screenWidth: number;  // Width percentage
-    screenHeight: number; // Height percentage
-    screenRadius: number; // Corner radius percentage (relative to screen width)
-}> = {
+export const BezelConfigs: {
+    [key: string]: {
+        label: string;
+        path: string;
+        screenX: number;
+        screenY: number;
+        screenWidth: number;
+        screenHeight: number;
+        screenRadius: number;
+    };
+} = {
     iphone: {
         label: "iPhone",
         path: "/bezels/iphone.png",
-        // iPhone 1350x2760 - screen area approximately
         screenX: 5.3,
         screenY: 2.5,
         screenWidth: 89.4,
@@ -95,7 +92,6 @@ export const BezelConfigs: Record<Exclude<BezelType, "">, {
     ipad: {
         label: "iPad",
         path: "/bezels/ipad.png",
-        // iPad 2640x1880 - screen area approximately
         screenX: 4.1,
         screenY: 5.7,
         screenWidth: 91.8,
@@ -105,7 +101,6 @@ export const BezelConfigs: Record<Exclude<BezelType, "">, {
     macbook: {
         label: "MacBook",
         path: "/bezels/macbook.png",
-        // MacBook 3220x2100 - screen area (just the display, not keyboard)
         screenX: 10.2,
         screenY: 10.4,
         screenWidth: 79.6,
@@ -126,7 +121,7 @@ export class ComposedImage extends DataBlock {
     ratio = AspectRatios[0];
 
     @field()
-    bezel: BezelType = "";
+    bezel?: typeof BezelOptions[0];
 
     @field({ type: Boolean })
     portrait = false;
