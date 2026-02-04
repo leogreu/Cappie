@@ -2,7 +2,7 @@ import { AppComponent, customElement, state, css, html } from "components/base/a
 import { downloadObjectURL, uploadFile, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
 import { all } from "persistence/controller/lit-controller.ts";
-import { ComposedImage, TransformOptions, AspectRatios } from "../../models/composed-image.ts";
+import { ComposedImage, TransformOptions, AspectRatios, BezelOptions, BezelConfigs, type BezelType } from "../../models/composed-image.ts";
 import { FileUpload } from "../../models/file-upload.ts";
 import { Router, type RouterLocation } from "@vaadin/router";
 
@@ -38,6 +38,7 @@ export class AppHome extends AppComponent {
     // Keep references for performance reasons
     backgroundImage?: HTMLImageElement;
     foregroundImages: HTMLImageElement[] = [];
+    bezelImage?: HTMLImageElement;
 
     static styles = css`
         :host {
@@ -181,6 +182,23 @@ export class AppHome extends AppComponent {
                                 `)}
                             </app-group>
                         </app-group>
+                        <app-group direction="column">
+                            <app-paragraph bold>
+                                Bezel
+                            </app-paragraph>
+                            <app-group @click=${this.handleBezelClick}>
+                                ${BezelOptions.map(bezel => html`
+                                    <app-button
+                                        id=${bezel}
+                                        size="small"
+                                        ?checked=${bezel === this.composition?.bezel}
+                                        fullwidth
+                                    >
+                                        ${bezel ? bezel.charAt(0).toUpperCase() + bezel.slice(1) : "None"}
+                                    </app-button>
+                                `)}
+                            </app-group>
+                        </app-group>
                         ${this.error && html`
                             <app-notification type="danger">
                                 <app-text slot="title">
@@ -302,8 +320,19 @@ export class AppHome extends AppComponent {
             const maxGap = 20;
             const fullGap = (totalImages - 1) * maxGap;
 
+            // Check if bezel is active
+            const bezelConfig = this.composition.bezel ? BezelConfigs[this.composition.bezel] : null;
+            const hasBezel = bezelConfig && this.bezelImage;
+
             // Calculate image dimensions based on first image's aspect ratio
-            const imgRatio = this.foregroundImages[0].width / this.foregroundImages[0].height;
+            // When bezel is active, we use the bezel's aspect ratio instead
+            let imgRatio: number;
+            if (hasBezel) {
+                imgRatio = this.bezelImage!.width / this.bezelImage!.height;
+            } else {
+                imgRatio = this.foregroundImages[0].width / this.foregroundImages[0].height;
+            }
+
             const widthWhenSpread = (availableWidth - fullGap) / totalImages;
 
             // Interpolate width between overlapped (full) and spread (shared)
@@ -342,19 +371,81 @@ export class AppHome extends AppComponent {
                 ctx.translate(xCenter, elevation);
                 ctx.rotate((rotation * Math.PI) / 180);
 
-                // Draw rounded rectangle, then add shadow, clip it, and finally add the image
-                this.roundRect(ctx, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
+                if (hasBezel) {
+                    // Draw with bezel: first draw the screenshot in the screen area, then overlay the bezel
+                    const screenX = (bezelConfig!.screenX / 100) * imageWidth;
+                    const screenY = (bezelConfig!.screenY / 100) * imageHeight;
+                    const screenWidth = (bezelConfig!.screenWidth / 100) * imageWidth;
+                    const screenHeight = (bezelConfig!.screenHeight / 100) * imageHeight;
 
-                if (shadow) {
-                    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-                    ctx.shadowBlur = shadow * 2;
-                    ctx.shadowOffsetY = shadow;
-                    ctx.fillStyle = "white";
-                    ctx.fill();
+                    // Add shadow to the entire bezel
+                    if (shadow) {
+                        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+                        ctx.shadowBlur = shadow * 2;
+                        ctx.shadowOffsetY = shadow;
+                        // Draw a shadow shape matching the bezel
+                        this.roundRect(ctx, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
+                        ctx.fillStyle = "white";
+                        ctx.fill();
+                        ctx.shadowColor = "transparent";
+                        ctx.shadowBlur = 0;
+                        ctx.shadowOffsetY = 0;
+                    }
+
+                    // Clip the screenshot to the screen area with rounded corners
+                    ctx.save();
+                    const screenRadius = (bezelConfig!.screenRadius / 100) * screenWidth;
+                    this.roundRect(
+                        ctx,
+                        -imageWidth / 2 + screenX,
+                        -imageHeight / 2 + screenY,
+                        screenWidth,
+                        screenHeight,
+                        screenRadius
+                    );
+                    ctx.clip();
+
+                    // Draw screenshot with "cover" behavior (maintain aspect ratio, crop if needed)
+                    const imgAspect = img.width / img.height;
+                    const screenAspect = screenWidth / screenHeight;
+                    
+                    let drawWidth: number, drawHeight: number, drawX: number, drawY: number;
+                    
+                    if (imgAspect > screenAspect) {
+                        // Image is wider than screen area - fit by height, crop width
+                        drawHeight = screenHeight;
+                        drawWidth = screenHeight * imgAspect;
+                        drawX = -imageWidth / 2 + screenX + (screenWidth - drawWidth) / 2;
+                        drawY = -imageHeight / 2 + screenY;
+                    } else {
+                        // Image is taller than screen area - fit by width, crop height
+                        drawWidth = screenWidth;
+                        drawHeight = screenWidth / imgAspect;
+                        drawX = -imageWidth / 2 + screenX;
+                        drawY = -imageHeight / 2 + screenY + (screenHeight - drawHeight) / 2;
+                    }
+                    
+                    ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+                    ctx.restore();
+
+                    // Draw bezel on top (bezel has transparent screen area with rounded corners)
+                    ctx.drawImage(this.bezelImage!, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
+                } else {
+                    // Draw without bezel (original behavior)
+                    // Draw rounded rectangle, then add shadow, clip it, and finally add the image
+                    this.roundRect(ctx, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
+
+                    if (shadow) {
+                        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+                        ctx.shadowBlur = shadow * 2;
+                        ctx.shadowOffsetY = shadow;
+                        ctx.fillStyle = "white";
+                        ctx.fill();
+                    }
+
+                    ctx.clip();
+                    ctx.drawImage(img, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
                 }
-
-                ctx.clip();
-                ctx.drawImage(img, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
                 ctx.restore();
             });
 
@@ -468,6 +559,17 @@ export class AppHome extends AppComponent {
         this.updateAndCommit();
     }
 
+    private handleBezelClick({ target }: MouseEvent) {
+        if (!this.composition) return;
+
+        const { id } = target as HTMLElement;
+        if (BezelOptions.includes(id as BezelType)) {
+            this.composition.bezel = id as BezelType;
+            this.loadBezelImage();
+            this.updateAndCommit();
+        }
+    }
+
     private handleNumericInput({ target }: InputEvent) {
         if (!this.composition) return;
 
@@ -558,6 +660,28 @@ export class AppHome extends AppComponent {
         this.drawCanvas();
     }
 
+    private loadBezelImage() {
+        if (!this.composition?.bezel) {
+            this.bezelImage = undefined;
+            this.drawCanvas();
+            return;
+        }
+
+        const config = BezelConfigs[this.composition.bezel];
+        if (!config) {
+            this.bezelImage = undefined;
+            this.drawCanvas();
+            return;
+        }
+
+        const image = new Image();
+        image.src = config.path;
+        image.onload = () => {
+            this.bezelImage = image;
+            this.drawCanvas();
+        };
+    }
+
     private async updateAndCommit() {
         this.requestUpdate();
         this.drawCanvas();
@@ -588,6 +712,7 @@ export class AppHome extends AppComponent {
         ) {
             this.loadForegroundImages();
             this.loadBackgroundImage();
+            this.loadBezelImage();
 
             if (!this.composition.preview) {
                 this.commit();

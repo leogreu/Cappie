@@ -67,6 +67,49 @@ export const TransformOptions: {
 
 export const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
 
+export const BezelOptions = ["", "iphone", "ipad", "macbook"] as const;
+export type BezelType = typeof BezelOptions[number];
+
+// Bezel configurations: define where the screenshot should be placed within each bezel
+// All values are in percentages relative to the bezel image dimensions
+export const BezelConfigs: Record<Exclude<BezelType, "">, {
+    path: string;
+    // Screen area within the bezel (as percentages)
+    screenX: number;      // Left offset percentage
+    screenY: number;      // Top offset percentage
+    screenWidth: number;  // Width percentage
+    screenHeight: number; // Height percentage
+    screenRadius: number; // Corner radius percentage (relative to screen width)
+}> = {
+    iphone: {
+        path: "/bezels/iphone.png",
+        // iPhone 1350x2760 - screen area approximately
+        screenX: 4.5,
+        screenY: 2.2,
+        screenWidth: 91,
+        screenHeight: 95.6,
+        screenRadius: 15
+    },
+    ipad: {
+        path: "/bezels/ipad.png",
+        // iPad 2640x1880 - screen area approximately
+        screenX: 5.5,
+        screenY: 7.5,
+        screenWidth: 89,
+        screenHeight: 85,
+        screenRadius: 2
+    },
+    macbook: {
+        path: "/bezels/macbook.png",
+        // MacBook 3220x2100 - screen area (just the display, not keyboard)
+        screenX: 11.5,
+        screenY: 5.5,
+        screenWidth: 77,
+        screenHeight: 63,
+        screenRadius: 1.5
+    }
+};
+
 @block({ collection: "files", store: "composed-image" })
 export class ComposedImage extends DataBlock {
     @field({ relation: [FileUpload], lazy: true })
@@ -77,6 +120,9 @@ export class ComposedImage extends DataBlock {
 
     @field({ type: Number })
     ratio = AspectRatios[0];
+
+    @field()
+    bezel: BezelType = "";
 
     @field({ type: Boolean })
     portrait = false;
