@@ -134,6 +134,9 @@ export class ComposedImage extends DataBlock {
     @field({ type: Object })
     transforms = ComposedImage.defaults;
 
+    @field({ type: [String] })
+    renderOrder: string[] = [];
+
     @field()
     preview?: string;
 

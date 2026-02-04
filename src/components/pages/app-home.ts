@@ -110,7 +110,7 @@ export class AppHome extends AppComponent {
                             <app-paragraph bold>
                                 Screenshots
                             </app-paragraph>
-                            <app-group direction="grid">
+                            <app-group direction="grid" @click=${this.handleScreenshotOrderClick}>
                                 ${this.screenshots.map(image => html`
                                     <image-button
                                         id=${image.uuid}
@@ -352,8 +352,21 @@ export class AppHome extends AppComponent {
             ctx.save();
             ctx.translate(width / 2, height / 2);
 
-            // Draw each screenshot
-            this.foregroundImages.forEach((img, index) => {
+            // Determine draw order based on renderOrder (items in renderOrder drawn last = on top)
+            const renderOrder = this.composition.renderOrder;
+            const imageUuids = this.composition.images.map(img => img.uuid);
+            const drawOrder = this.foregroundImages.map((_, i) => i).sort((a, b) => {
+                const aIdx = renderOrder.indexOf(imageUuids[a]);
+                const bIdx = renderOrder.indexOf(imageUuids[b]);
+                if (aIdx === -1 && bIdx === -1) return 0;
+                if (aIdx === -1) return -1;
+                if (bIdx === -1) return 1;
+                return aIdx - bIdx;
+            });
+
+            // Draw each screenshot (in z-order, but position based on original index)
+            drawOrder.forEach(index => {
+                const img = this.foregroundImages[index];
                 const xCenterFullSpread = startXFullSpread + widthWhenSpread / 2 + (index * (widthWhenSpread + maxGap));
                 const xCenter = xCenterFullSpread * spacing;
 
@@ -491,6 +504,21 @@ export class AppHome extends AppComponent {
     private async handleScreenshotClick() {
         const file = await uploadFile("base64Binary");
         this.handleFileInput({ detail: file } as CustomEvent<Base64File>);
+    }
+
+    private handleScreenshotOrderClick({ target }: MouseEvent) {
+        if (!this.composition) return;
+        
+        const { id } = target as HTMLElement;
+        if (!this.screenshots.some(img => img.uuid === id)) return;
+
+        // Remove from current position and add to end (top of stack)
+        this.composition.renderOrder = [
+            ...this.composition.renderOrder.filter(uuid => uuid !== id),
+            id
+        ];
+        this.loadForegroundImages();
+        this.updateAndCommit();
     }
 
     private handleDeleteScreenshot({ detail }: CustomEvent<string>) {
