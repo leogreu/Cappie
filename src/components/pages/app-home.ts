@@ -532,6 +532,13 @@ export class AppHome extends AppComponent {
         const { id } = target as HTMLElement;
         if (BezelOptions.includes(id as BezelType)) {
             this.composition.bezel = id as BezelType;
+
+            // Reset shadow and radius when selecting a bezel
+            if (id) {
+                this.composition.transforms.shadow = 0;
+                this.composition.transforms.radius = 0;
+            }
+
             this.loadBezelImage();
             this.updateAndCommit();
         }
