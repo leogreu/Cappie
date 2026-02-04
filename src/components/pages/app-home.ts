@@ -517,7 +517,7 @@ export class AppHome extends AppComponent {
             ...this.composition.renderOrder.filter(uuid => uuid !== id),
             id
         ];
-        this.loadForegroundImages();
+
         this.updateAndCommit();
     }
 
@@ -669,15 +669,8 @@ export class AppHome extends AppComponent {
             return;
         }
 
-        const config = BezelConfigs[this.composition.bezel];
-        if (!config) {
-            this.bezelImage = undefined;
-            this.drawCanvas();
-            return;
-        }
-
         const image = new Image();
-        image.src = config.path;
+        image.src = BezelConfigs[this.composition.bezel].path;
         image.onload = () => {
             this.bezelImage = image;
             this.drawCanvas();
