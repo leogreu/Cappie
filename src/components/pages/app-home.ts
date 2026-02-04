@@ -371,80 +371,39 @@ export class AppHome extends AppComponent {
                 ctx.translate(xCenter, elevation);
                 ctx.rotate((rotation * Math.PI) / 180);
 
+                const x = -imageWidth / 2;
+                const y = -imageHeight / 2;
+
+                // Apply shadow
+                if (shadow) {
+                    this.roundRect(ctx, x, y, imageWidth, imageHeight, radius);
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+                    ctx.shadowBlur = shadow * 2;
+                    ctx.shadowOffsetY = shadow;
+                    ctx.fillStyle = "white";
+                    ctx.fill();
+                    ctx.shadowColor = "transparent";
+                }
+
                 if (hasBezel) {
-                    // Draw with bezel: first draw the screenshot in the screen area, then overlay the bezel
-                    const screenX = (bezelConfig!.screenX / 100) * imageWidth;
-                    const screenY = (bezelConfig!.screenY / 100) * imageHeight;
-                    const screenWidth = (bezelConfig!.screenWidth / 100) * imageWidth;
-                    const screenHeight = (bezelConfig!.screenHeight / 100) * imageHeight;
+                    const sx = x + (bezelConfig!.screenX / 100) * imageWidth;
+                    const sy = y + (bezelConfig!.screenY / 100) * imageHeight;
+                    const sw = (bezelConfig!.screenWidth / 100) * imageWidth;
+                    const sh = (bezelConfig!.screenHeight / 100) * imageHeight;
 
-                    // Add shadow to the entire bezel
-                    if (shadow) {
-                        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-                        ctx.shadowBlur = shadow * 2;
-                        ctx.shadowOffsetY = shadow;
-                        // Draw a shadow shape matching the bezel
-                        this.roundRect(ctx, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
-                        ctx.fillStyle = "white";
-                        ctx.fill();
-                        ctx.shadowColor = "transparent";
-                        ctx.shadowBlur = 0;
-                        ctx.shadowOffsetY = 0;
-                    }
-
-                    // Clip the screenshot to the screen area with rounded corners
+                    // Clip and draw screenshot with "cover" behavior
                     ctx.save();
-                    const screenRadius = (bezelConfig!.screenRadius / 100) * screenWidth;
-                    this.roundRect(
-                        ctx,
-                        -imageWidth / 2 + screenX,
-                        -imageHeight / 2 + screenY,
-                        screenWidth,
-                        screenHeight,
-                        screenRadius
-                    );
+                    this.roundRect(ctx, sx, sy, sw, sh, (bezelConfig!.screenRadius / 100) * sw);
                     ctx.clip();
-
-                    // Draw screenshot with "cover" behavior (maintain aspect ratio, crop if needed)
-                    const imgAspect = img.width / img.height;
-                    const screenAspect = screenWidth / screenHeight;
-                    
-                    let drawWidth: number, drawHeight: number, drawX: number, drawY: number;
-                    
-                    if (imgAspect > screenAspect) {
-                        // Image is wider than screen area - fit by height, crop width
-                        drawHeight = screenHeight;
-                        drawWidth = screenHeight * imgAspect;
-                        drawX = -imageWidth / 2 + screenX + (screenWidth - drawWidth) / 2;
-                        drawY = -imageHeight / 2 + screenY;
-                    } else {
-                        // Image is taller than screen area - fit by width, crop height
-                        drawWidth = screenWidth;
-                        drawHeight = screenWidth / imgAspect;
-                        drawX = -imageWidth / 2 + screenX;
-                        drawY = -imageHeight / 2 + screenY + (screenHeight - drawHeight) / 2;
-                    }
-                    
-                    ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+                    this.drawCover(ctx, img, sx, sy, sw, sh);
                     ctx.restore();
 
-                    // Draw bezel on top (bezel has transparent screen area with rounded corners)
-                    ctx.drawImage(this.bezelImage!, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
+                    // Draw bezel on top
+                    ctx.drawImage(this.bezelImage!, x, y, imageWidth, imageHeight);
                 } else {
-                    // Draw without bezel (original behavior)
-                    // Draw rounded rectangle, then add shadow, clip it, and finally add the image
-                    this.roundRect(ctx, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
-
-                    if (shadow) {
-                        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-                        ctx.shadowBlur = shadow * 2;
-                        ctx.shadowOffsetY = shadow;
-                        ctx.fillStyle = "white";
-                        ctx.fill();
-                    }
-
+                    this.roundRect(ctx, x, y, imageWidth, imageHeight, radius);
                     ctx.clip();
-                    ctx.drawImage(img, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
+                    ctx.drawImage(img, x, y, imageWidth, imageHeight);
                 }
                 ctx.restore();
             });
@@ -467,6 +426,14 @@ export class AppHome extends AppComponent {
         ctx.lineTo(x, y + r);
         ctx.quadraticCurveTo(x, y, x + r, y);
         ctx.closePath();
+    }
+
+    // Draw image with "cover" behavior (maintain aspect ratio, crop to fill)
+    private drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+        const scale = Math.max(w / img.width, h / img.height);
+        const sw = img.width * scale;
+        const sh = img.height * scale;
+        ctx.drawImage(img, x + (w - sw) / 2, y + (h - sh) / 2, sw, sh);
     }
 
     private async handleFileInput({ detail }: CustomEvent<Base64File>) {
