@@ -313,7 +313,7 @@ export class AppHome extends AppComponent {
 
         // Draw foreground if available
         if (this.foregroundImages.length > 0) {
-            const { spacing, radius, shadow, scale, rotate, elevate } = this.composition.transforms;
+            const { spacing, scale, rotate, elevate } = this.composition.transforms;
             const totalImages = this.foregroundImages.length;
             const availableWidth = width * scale;
             const availableHeight = height * scale;
@@ -323,6 +323,10 @@ export class AppHome extends AppComponent {
             // Check if bezel is active
             const bezelConfig = this.composition.bezel ? BezelConfigs[this.composition.bezel] : null;
             const hasBezel = bezelConfig && this.bezelImage;
+
+            // Ignore shadow and radius when bezel is active
+            const shadow = hasBezel ? 0 : this.composition.transforms.shadow;
+            const radius = hasBezel ? 0 : this.composition.transforms.radius;
 
             // Calculate image dimensions based on first image's aspect ratio
             // When bezel is active, we use the bezel's aspect ratio instead
@@ -560,12 +564,6 @@ export class AppHome extends AppComponent {
         const { id } = target as HTMLElement;
         if (BezelOptions.includes(id as BezelType)) {
             this.composition.bezel = id as BezelType;
-
-            // Reset shadow and radius when selecting a bezel
-            if (id) {
-                this.composition.transforms.shadow = 0;
-                this.composition.transforms.radius = 0;
-            }
 
             this.loadBezelImage();
             this.updateAndCommit();
