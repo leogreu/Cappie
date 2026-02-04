@@ -73,6 +73,7 @@ export type BezelType = typeof BezelOptions[number];
 // Bezel configurations: define where the screenshot should be placed within each bezel
 // All values are in percentages relative to the bezel image dimensions
 export const BezelConfigs: Record<Exclude<BezelType, "">, {
+    label: string;
     path: string;
     // Screen area within the bezel (as percentages)
     screenX: number;      // Left offset percentage
@@ -82,6 +83,7 @@ export const BezelConfigs: Record<Exclude<BezelType, "">, {
     screenRadius: number; // Corner radius percentage (relative to screen width)
 }> = {
     iphone: {
+        label: "iPhone",
         path: "/bezels/iphone.png",
         // iPhone 1350x2760 - screen area approximately
         screenX: 4.5,
@@ -91,6 +93,7 @@ export const BezelConfigs: Record<Exclude<BezelType, "">, {
         screenRadius: 15
     },
     ipad: {
+        label: "iPad",
         path: "/bezels/ipad.png",
         // iPad 2640x1880 - screen area approximately
         screenX: 5.5,
@@ -100,6 +103,7 @@ export const BezelConfigs: Record<Exclude<BezelType, "">, {
         screenRadius: 2
     },
     macbook: {
+        label: "MacBook",
         path: "/bezels/macbook.png",
         // MacBook 3220x2100 - screen area (just the display, not keyboard)
         screenX: 11.5,

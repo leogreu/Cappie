@@ -194,7 +194,7 @@ export class AppHome extends AppComponent {
                                         ?checked=${bezel === this.composition?.bezel}
                                         fullwidth
                                     >
-                                        ${bezel ? bezel.charAt(0).toUpperCase() + bezel.slice(1) : "None"}
+                                        ${bezel ? BezelConfigs[bezel].label : "None"}
                                     </app-button>
                                 `)}
                             </app-group>
