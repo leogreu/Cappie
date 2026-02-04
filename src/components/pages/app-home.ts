@@ -2,7 +2,7 @@ import { AppComponent, customElement, state, css, html } from "components/base/a
 import { downloadObjectURL, uploadFile, type Base64File } from "utils/files.ts";
 import { debounce } from "utils/debounce.ts";
 import { all } from "persistence/controller/lit-controller.ts";
-import { ComposedImage, TransformOptions, AspectRatios } from "../../models/composed-image.ts";
+import { ComposedImage, TransformOptions, AspectRatios, BezelOptions, BezelConfigs } from "../../models/composed-image.ts";
 import { FileUpload } from "../../models/file-upload.ts";
 import { Router, type RouterLocation } from "@vaadin/router";
 
@@ -38,6 +38,7 @@ export class AppHome extends AppComponent {
     // Keep references for performance reasons
     backgroundImage?: HTMLImageElement;
     foregroundImages: HTMLImageElement[] = [];
+    bezelImage?: HTMLImageElement;
 
     static styles = css`
         :host {
@@ -109,7 +110,7 @@ export class AppHome extends AppComponent {
                             <app-paragraph bold>
                                 Screenshots
                             </app-paragraph>
-                            <app-group direction="grid">
+                            <app-group direction="grid" @click=${this.handleScreenshotOrderClick}>
                                 ${this.screenshots.map(image => html`
                                     <image-button
                                         id=${image.uuid}
@@ -177,6 +178,23 @@ export class AppHome extends AppComponent {
                                         fullwidth
                                     >
                                         ${ratio ? ratio.replace(" / ", ":") : "Responsive"}
+                                    </app-button>
+                                `)}
+                            </app-group>
+                        </app-group>
+                        <app-group direction="column">
+                            <app-paragraph bold>
+                                Bezel
+                            </app-paragraph>
+                            <app-group @click=${this.handleBezelClick}>
+                                ${BezelOptions.map(bezel => html`
+                                    <app-button
+                                        id=${bezel}
+                                        size="small"
+                                        ?checked=${bezel === this.composition?.bezel}
+                                        fullwidth
+                                    >
+                                        ${bezel ? BezelConfigs[bezel].label : "None"}
                                     </app-button>
                                 `)}
                             </app-group>
@@ -295,15 +313,30 @@ export class AppHome extends AppComponent {
 
         // Draw foreground if available
         if (this.foregroundImages.length > 0) {
-            const { spacing, radius, shadow, scale, rotate, elevate } = this.composition.transforms;
+            const { spacing, scale, rotate, elevate } = this.composition.transforms;
             const totalImages = this.foregroundImages.length;
             const availableWidth = width * scale;
             const availableHeight = height * scale;
             const maxGap = 20;
             const fullGap = (totalImages - 1) * maxGap;
 
+            // Check if bezel is active
+            const bezelConfig = this.composition.bezel ? BezelConfigs[this.composition.bezel] : null;
+            const hasBezel = bezelConfig && this.bezelImage;
+
+            // Ignore shadow and radius when bezel is active
+            const shadow = hasBezel ? 0 : this.composition.transforms.shadow;
+            const radius = hasBezel ? 0 : this.composition.transforms.radius;
+
             // Calculate image dimensions based on first image's aspect ratio
-            const imgRatio = this.foregroundImages[0].width / this.foregroundImages[0].height;
+            // When bezel is active, we use the bezel's aspect ratio instead
+            let imgRatio: number;
+            if (hasBezel) {
+                imgRatio = this.bezelImage!.width / this.bezelImage!.height;
+            } else {
+                imgRatio = this.foregroundImages[0].width / this.foregroundImages[0].height;
+            }
+
             const widthWhenSpread = (availableWidth - fullGap) / totalImages;
 
             // Interpolate width between overlapped (full) and spread (shared)
@@ -323,8 +356,21 @@ export class AppHome extends AppComponent {
             ctx.save();
             ctx.translate(width / 2, height / 2);
 
-            // Draw each screenshot
-            this.foregroundImages.forEach((img, index) => {
+            // Determine draw order based on renderOrder (items in renderOrder drawn last = on top)
+            const renderOrder = this.composition.renderOrder;
+            const imageUuids = this.composition.images.map(img => img.uuid);
+            const drawOrder = this.foregroundImages.map((_, i) => i).sort((a, b) => {
+                const aIdx = renderOrder.indexOf(imageUuids[a]);
+                const bIdx = renderOrder.indexOf(imageUuids[b]);
+                if (aIdx === -1 && bIdx === -1) return 0;
+                if (aIdx === -1) return -1;
+                if (bIdx === -1) return 1;
+                return aIdx - bIdx;
+            });
+
+            // Draw each screenshot (in z-order, but position based on original index)
+            drawOrder.forEach(index => {
+                const img = this.foregroundImages[index];
                 const xCenterFullSpread = startXFullSpread + widthWhenSpread / 2 + (index * (widthWhenSpread + maxGap));
                 const xCenter = xCenterFullSpread * spacing;
 
@@ -342,19 +388,40 @@ export class AppHome extends AppComponent {
                 ctx.translate(xCenter, elevation);
                 ctx.rotate((rotation * Math.PI) / 180);
 
-                // Draw rounded rectangle, then add shadow, clip it, and finally add the image
-                this.roundRect(ctx, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight, radius);
+                const x = -imageWidth / 2;
+                const y = -imageHeight / 2;
 
+                // Apply shadow
                 if (shadow) {
+                    this.roundRect(ctx, x, y, imageWidth, imageHeight, radius);
                     ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
                     ctx.shadowBlur = shadow * 2;
                     ctx.shadowOffsetY = shadow;
                     ctx.fillStyle = "white";
                     ctx.fill();
+                    ctx.shadowColor = "transparent";
                 }
 
-                ctx.clip();
-                ctx.drawImage(img, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
+                if (hasBezel) {
+                    const sx = x + (bezelConfig!.screenX / 100) * imageWidth;
+                    const sy = y + (bezelConfig!.screenY / 100) * imageHeight;
+                    const sw = (bezelConfig!.screenWidth / 100) * imageWidth;
+                    const sh = (bezelConfig!.screenHeight / 100) * imageHeight;
+
+                    // Clip and draw screenshot with "cover" behavior
+                    ctx.save();
+                    this.roundRect(ctx, sx, sy, sw, sh, (bezelConfig!.screenRadius / 100) * sw);
+                    ctx.clip();
+                    this.drawCover(ctx, img, sx, sy, sw, sh);
+                    ctx.restore();
+
+                    // Draw bezel on top
+                    ctx.drawImage(this.bezelImage!, x, y, imageWidth, imageHeight);
+                } else {
+                    this.roundRect(ctx, x, y, imageWidth, imageHeight, radius);
+                    ctx.clip();
+                    ctx.drawImage(img, x, y, imageWidth, imageHeight);
+                }
                 ctx.restore();
             });
 
@@ -376,6 +443,14 @@ export class AppHome extends AppComponent {
         ctx.lineTo(x, y + r);
         ctx.quadraticCurveTo(x, y, x + r, y);
         ctx.closePath();
+    }
+
+    // Draw image with "cover" behavior (maintain aspect ratio, crop to fill)
+    private drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+        const scale = Math.max(w / img.width, h / img.height);
+        const sw = img.width * scale;
+        const sh = img.height * scale;
+        ctx.drawImage(img, x + (w - sw) / 2, y + (h - sh) / 2, sw, sh);
     }
 
     private async handleFileInput({ detail }: CustomEvent<Base64File>) {
@@ -435,6 +510,21 @@ export class AppHome extends AppComponent {
         this.handleFileInput({ detail: file } as CustomEvent<Base64File>);
     }
 
+    private handleScreenshotOrderClick({ target }: MouseEvent) {
+        if (!this.composition) return;
+        
+        const { id } = target as HTMLElement;
+        if (!this.screenshots.some(img => img.uuid === id)) return;
+
+        // Remove from current position and add to end (top of stack)
+        this.composition.renderOrder = [
+            ...this.composition.renderOrder.filter(uuid => uuid !== id),
+            id
+        ];
+
+        this.updateAndCommit();
+    }
+
     private handleDeleteScreenshot({ detail }: CustomEvent<string>) {
         document.createElement("app-dialog").show({
             title: "Please confirm",
@@ -466,6 +556,17 @@ export class AppHome extends AppComponent {
 
         this.composition.portrait = !this.composition.portrait;
         this.updateAndCommit();
+    }
+
+    private handleBezelClick({ target }: MouseEvent) {
+        if (!this.composition) return;
+
+        const { id } = target as HTMLElement;
+        if (BezelOptions.includes(id)) {
+            this.composition.bezel = id;
+            this.loadBezelImage();
+            this.updateAndCommit();
+        }
     }
 
     private handleNumericInput({ target }: InputEvent) {
@@ -558,6 +659,21 @@ export class AppHome extends AppComponent {
         this.drawCanvas();
     }
 
+    private loadBezelImage() {
+        if (!this.composition?.bezel) {
+            this.bezelImage = undefined;
+            this.drawCanvas();
+            return;
+        }
+
+        const image = new Image();
+        image.src = BezelConfigs[this.composition.bezel].path;
+        image.onload = () => {
+            this.bezelImage = image;
+            this.drawCanvas();
+        };
+    }
+
     private async updateAndCommit() {
         this.requestUpdate();
         this.drawCanvas();
@@ -588,6 +704,7 @@ export class AppHome extends AppComponent {
         ) {
             this.loadForegroundImages();
             this.loadBackgroundImage();
+            this.loadBezelImage();
 
             if (!this.composition.preview) {
                 this.commit();

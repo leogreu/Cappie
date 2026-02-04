@@ -1,6 +1,10 @@
 import { DataBlock, block, field, type BlockReference } from "persistence/data-block.ts";
 import { FileUpload } from "./file-upload.ts";
 
+export const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
+
+export const BezelOptions = ["", "iphone", "ipad", "macbook"];
+
 export const TransformOptions: {
     [key: string]: {
         name: string;
@@ -65,7 +69,45 @@ export const TransformOptions: {
     }
 };
 
-export const AspectRatios = ["", "1 / 1", "4 / 3", "16 / 9"];
+export const BezelConfigs: {
+    [key: string]: {
+        label: string;
+        path: string;
+        screenX: number;
+        screenY: number;
+        screenWidth: number;
+        screenHeight: number;
+        screenRadius: number;
+    };
+} = {
+    iphone: {
+        label: "iPhone",
+        path: "/bezels/iphone.png",
+        screenX: 5.3,
+        screenY: 2.5,
+        screenWidth: 89.4,
+        screenHeight: 95,
+        screenRadius: 15
+    },
+    ipad: {
+        label: "iPad",
+        path: "/bezels/ipad.png",
+        screenX: 4.1,
+        screenY: 5.7,
+        screenWidth: 91.8,
+        screenHeight: 88.6,
+        screenRadius: 2
+    },
+    macbook: {
+        label: "MacBook",
+        path: "/bezels/macbook.png",
+        screenX: 10.2,
+        screenY: 10.4,
+        screenWidth: 79.6,
+        screenHeight: 79.3,
+        screenRadius: 0.5
+    }
+};
 
 @block({ collection: "files", store: "composed-image" })
 export class ComposedImage extends DataBlock {
@@ -78,11 +120,17 @@ export class ComposedImage extends DataBlock {
     @field({ type: Number })
     ratio = AspectRatios[0];
 
+    @field()
+    bezel?: typeof BezelOptions[0];
+
     @field({ type: Boolean })
     portrait = false;
 
     @field({ type: Object })
     transforms = ComposedImage.defaults;
+
+    @field({ type: [String] })
+    renderOrder: string[] = [];
 
     @field()
     preview?: string;
