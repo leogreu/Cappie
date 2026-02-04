@@ -86,31 +86,31 @@ export const BezelConfigs: Record<Exclude<BezelType, "">, {
         label: "iPhone",
         path: "/bezels/iphone.png",
         // iPhone 1350x2760 - screen area approximately
-        screenX: 4.5,
-        screenY: 2.2,
-        screenWidth: 91,
-        screenHeight: 95.6,
+        screenX: 5.3,
+        screenY: 2.5,
+        screenWidth: 89.4,
+        screenHeight: 95,
         screenRadius: 15
     },
     ipad: {
         label: "iPad",
         path: "/bezels/ipad.png",
         // iPad 2640x1880 - screen area approximately
-        screenX: 5.5,
-        screenY: 7.5,
-        screenWidth: 89,
-        screenHeight: 85,
+        screenX: 4.1,
+        screenY: 5.7,
+        screenWidth: 91.8,
+        screenHeight: 88.6,
         screenRadius: 2
     },
     macbook: {
         label: "MacBook",
         path: "/bezels/macbook.png",
         // MacBook 3220x2100 - screen area (just the display, not keyboard)
-        screenX: 11.5,
-        screenY: 5.5,
-        screenWidth: 77,
-        screenHeight: 63,
-        screenRadius: 1.5
+        screenX: 10.2,
+        screenY: 10.4,
+        screenWidth: 79.6,
+        screenHeight: 79.3,
+        screenRadius: 0.5
     }
 };
 
